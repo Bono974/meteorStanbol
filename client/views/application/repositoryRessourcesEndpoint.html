@@ -1,0 +1,79 @@
+<template name="repositoryRessource">
+<div id=main>
+    <div class="container">
+        <div class="row main-row">
+            <div class="8u 12u(mobile)">
+                Choisissez une ressource à afficher et à annoter <br/> <br/>
+
+                <form action="" class="getMetaRessource">
+                    <select name="ressource">
+                        {{#each listRessources}}
+                        <option value={{.}}> {{.}} </option>
+                        {{/each}}
+                    </select>
+                    <button type="submit" value="open"> Ouvrir et visualiser </button>
+                    <button type="submit" value="delete"> Supprimer du dépôt </button>
+                </form>
+            </div>
+            <div class="4u 12u(mobile)">
+                <section>
+                    {{>metaRessource}}
+                </section>
+                <section>
+                    Charger une ressource (PDF, .txt, .xls, ..):
+
+                    {{> uploadRessource}}
+                </section>
+            </div>
+        </div>
+        <div>
+            {{> enhancer}}
+        </div>
+    </div>
+
+</div>
+</template>
+
+
+<template name="metaRessource">
+Métadonnées de la ressource selectionnée : {{ressourceSelect}} <br/> <br/>
+{{METAressources}}
+</template>
+
+<template name="uploadRessource">
+<!-- 
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" class="jqUploadclass" data-form-data='{{ submitData }}'>
+        {{#with infoLabel}}
+            {{ infoLabel}} <button class="start">StartUpload</button>
+            <div style="width: 200px; height: 30px; border: 1px solid black">
+                <div style="background: red; height: 30px; width: {{ progress }}">
+                    {{ progress }}
+                </div>
+            </div>
+        {{/with}}
+    </form>
+--> 
+
+{{> upload_bootstrap }}
+</template>
+
+
+<template name="enhancer">
+    Enhancer : <br/> 
+    <form action="" class="chooseEnhancerChain">
+        Chain : <select name="chain">
+            {{#each listChains}}
+            <option value={{.}}> {{.}} </option>
+            {{/each}}
+        </select>
+        <button type="submit" value="enhancerProcess"> Annoter </button>
+
+        <br/>
+        <textarea name="content"> 
+            TODO : integrer ace editor ici. 
+        </textarea>
+    </form>
+
+    <br/> 
+</template>

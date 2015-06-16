@@ -1,0 +1,55 @@
+<template name="repositoryOnto">
+<div id=main>
+    <div class="container">
+        <div class="row main-row">
+            <div class="8u 12u(mobile)">
+                Choisissez une ontologie à afficher <br/><br/>
+
+                <form action="" name="getMetaOntoForm" class="getMetaOntoForm">
+                    <select name='ontology'>
+                        {{#each listOntos}}
+                        <option value={{.}}> {{.}} </option>
+                        {{/each}}
+                    </select>
+                    <button type="submit" name="open" value="open"> Ouvrir et visualiser </button>
+                    <button type="submit" name="delete" value="delete"> Supprimer du dépôt</button>
+                </form>
+            </div>
+            <div class="4u 12u(mobile)">
+                {{> metadata}}
+                <section>
+                    <form action="" name="addOntology" class="addOntology">
+                        Charger une ontologie : <br/><br/>
+
+                        Format :
+                        <select name="format">
+                            <option value="auto"> auto</option>
+                            <option value="application/rdf+xml"> rdf/xml</option>
+                            <option value="application/rdf+json"> rdf/json</option>
+                            <option value="text/turtle"> turtle</option>
+                            <option value="text/rdf+n3"> N3</option>
+                            <option value="text/plain"> N-Triples</option>
+                        </select> <br/>
+                        {{> uploadOntology}}
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+</template>
+
+<template name="metadata">
+Métadonnées de l'ontologie : <b> {{ontoSelect}} </b> <br/>
+<section>
+    <ul>
+        {{#each METAS}}
+        <li> {{.}} </li>
+        {{/each}}
+    </ul>
+</section>
+</template>
+
+<template name="uploadOntology">
+{{> upload_bootstrap }}
+</template>
