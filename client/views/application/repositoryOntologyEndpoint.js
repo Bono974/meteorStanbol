@@ -62,10 +62,28 @@ Template.repositoryOnto.events({
 });
 function test() {
     var graph = Viva.Graph.graph();
-    graph.addLink(1, 2);
+    graph.addNode('bruno', '4b2188722d3b8197d775f6b665f5f253');
+    graph.addLink(1, 'bruno');
+    graph.addLink(2, 'bruno');
+    graph.addLink(3, 'bruno');
 
+    graph.addLink(1, 2);
+    graph.addLink(2, 3);
+    graph.addLink(3, 1);
+
+
+
+    var graphics = Viva.Graph.View.svgGraphics();
+    graphics.node(function(node) {
+        var url = 'https://secure.gravatar.com/avatar/' + node.data;
+        return Viva.Graph.svg('image')
+        .attr('width', 24)
+        .attr('height', 24)
+        .link(url);
+    });
     var renderer = Viva.Graph.View.renderer(graph,
             {
+                graphics: graphics,
                 container: document.getElementById("VISU")
             });
     renderer.run();
