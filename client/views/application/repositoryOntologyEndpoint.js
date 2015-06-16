@@ -60,3 +60,17 @@ Template.repositoryOnto.events({
         });
     }
 });
+function test() {
+    var graph = Viva.Graph.graph();
+    graph.addLink(1, 2);
+
+    var renderer = Viva.Graph.View.renderer(graph,
+            {
+                container: document.getElementById("VISU")
+            });
+    renderer.run();
+}
+Template.visualisation.rendered = function() {
+    test();
+};
+
