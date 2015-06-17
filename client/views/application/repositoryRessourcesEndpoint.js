@@ -35,10 +35,6 @@ Template.repositoryRessource.events({
             Session.set('enhancedContent', results.enhanced);
             return results;
         });
-
-
-
-
     },
     "click button[value=delete]": function(event, t){
         event.preventDefault();
@@ -73,6 +69,7 @@ Meteor.startup(function () {
         "ORDER BY ASC(?name) ";
 
     function success(res) {
+        console.log(res);
         var chains = $('binding[name=name] literal', res).map(function () {
             return this.textContent;
         }).toArray();
