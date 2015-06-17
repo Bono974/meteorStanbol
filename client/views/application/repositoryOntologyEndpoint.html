@@ -56,7 +56,8 @@ Métadonnées de l'ontologie : <b> {{ontoSelect}} </b> <br/>
 </template>
 
 <template name="uploadOntology">
-{{> upload_bootstrap }}
+    {{> upload_bootstrap }}
+    <button type="submit" value="addOntology"> addTEST</button>
 </template>
 
 <template name="visualisation">
@@ -64,4 +65,12 @@ Métadonnées de l'ontologie : <b> {{ontoSelect}} </b> <br/>
     <div id="VISU">
         {{TEST}}
     </div>
+    <!--<div id="example"
+     data-sgvizler-endpoint="http://localhost:8080/sparql"
+     data-sgvizler-query=" SELECT * WHERE { ?subject rdfs:subClassOf ?object .  } LIMIT 100"
+     data-sgvizler-chart="sgvizler.visualization.D3ForceGraph"
+     style="width:800px; height:400px;"></div> -->
+
+    <!--<div id="testd3">
+    </div> -->
 </template>

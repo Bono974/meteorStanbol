@@ -1,59 +1,56 @@
+var stanbolURL = "http://localhost:8081";
 Meteor.methods({
     getListOnto: function() {
         this.unblock();
-        return HTTP.call("GET", "http://localhost:8080/servomap/getOntos");
+        return HTTP.call("GET", stanbolURL+"/servomap/getOntos");
     },
     align2ontos: function(ont1, ont2, binary) {
         this.unblock();
-        return HTTP.call("GET", "http://localhost:8080/servomap/align/?ontology="+ont1+"&ontology="+ont2+"&binary="+binary);
+        return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+ont1+"&ontology="+ont2+"&binary="+binary);
     },
     getMetaOnto: function(onto) {
         this.unblock();
-        return HTTP.call("GET", "http://localhost:8080/servomap/meta/?ontology="+onto);
+        return HTTP.call("GET", stanbolURL+"/servomap/meta/?ontology="+onto);
     },
     addOntology: function(onto, format) {
         this.unblock();
-        var onto1 = "P:\\ontologies\\mouse.owl";
-        return HTTP.call("POST", "http://localhost:8080/servomap/add/",
-        {
-            headers: {
-                "Content-type": "application/json"
-            },
-            params: {
-                file: onto,
-                format: format
 
-            }
-        });
+        var FormData = Meteor.npmRequire('form-data');
+        //var form = new FormData({
+        //    version: "1.0.0-rc1"
+        //});
+
+        var form = new FormData();
+
+        //var filePath = '../../../../../.uploads/' + onto;
+        var filePath = '../../../../../.uploads/atc.owl';
+        //form.append('file', filePath);
+        form.append('format', format);
+        form.append('file', fs.readFile(filePath));
+        var url = stanbolURL+"/servomap/add/";
+
+        //console.log(form);
+        return HTTP.call(
+                'POST',
+                url,
+                {
+                    content: form.content,
+                    headers: form.headers
+                });
     },
     deleteOnto: function(onto) {
         this.unblock();
-        return HTTP.call("DELETE", "http://localhost:8080/ontonet/"+onto)
+        return HTTP.call("DELETE", stanbolURL+"/ontonet/"+onto)
     },
 
     getMetaRessource: function(ressource) {
         this.unblock();
 
-        var url = "http://localhost:8080/enhancer/chain/all-active";
+        var url = stanbolURL+"/enhancer/chain/all-active";
         var filePath = '../../../../../.uploads/' + ressource;
-        //var enhancedPath = '../../../../../.uploads/' + 'enhanced_'+ ressource;
-        //var destination = fs.createWriteStream(enhancedPath);
-        //var settings = {
-        //    encoding: null,
-        //    method: 'POST',
-        //    url: url
-        //};
-        //var req = request(settings).pipe(destination);
-
-        //file.pipe(req);
-
-        //console.log(req.body);
-
-
-        //var fileStream = fs.createReadStream(filePath);
-
+        var fileStream = fs.createReadStream(filePath);
         var parts = {
-            file: filePath
+            file: fileStream
         };
 
         var formData = MultipartFormData(parts);

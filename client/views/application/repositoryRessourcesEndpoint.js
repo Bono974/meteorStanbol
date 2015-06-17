@@ -1,3 +1,4 @@
+var stanbolURL = "http://localhost:8081";
 Meteor.call('getListRessources', function(error, results) {
     Session.set('ressources', results);
     return results.content;
@@ -31,8 +32,8 @@ Template.repositoryRessource.events({
         var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
         Session.set('ressourceSelected', ressource);
         Meteor.call('getMetaRessource', ressource, function(error, results) {
-            Session.set('ressourceMETA', results.meta);
-            Session.set('enhancedContent', results.enhanced);
+            Session.set('ressourceMETA', results);
+            //Session.set('enhancedContent', results.enhanced);
             return results;
         });
     },
@@ -86,8 +87,7 @@ Meteor.startup(function () {
         return xhr;
     }
 
-    var stanbolUri = "http://localhost:8080";
-    var uri = stanbolUri + "/enhancer/sparql";
+    var uri = stanbolURL + "/enhancer/sparql";
 
     $.ajax({
         type: "POST",
@@ -114,13 +114,31 @@ Template.enhancer.events({
     "click button[value=enhancerProcess]": function(event, t) {
         //TODO : REVOIR jQuery UI
         event.preventDefault();
-        var z = new VIE();
-        z.use(new z.StanbolService({
-            url : "http://localhost:8080",
-            enhancer: {
-                chain: t.$("form.chooseEnhancerChain select[name=chain]").val()
-            }
-        }));
+
+        var dataToAnnotate = t.$("form.chooseEnhancerChain textarea[name=content]");
+        dataToAnnotate = dataToAnnotate[0].value;
+        console.log(dataToAnnotate);
+
+        var uri = stanbolURL + "/enhancer/chain/all-active";
+
+        $.ajax({
+            type: "POST",
+            url: uri,
+            data: {query: query},
+            accepts: ["application/json"],
+                // dataType: "application/json",
+            success: success,
+            error: error
+        });
+
+
+        //var z = new VIE();
+        //z.use(new z.StanbolService({
+        //    url : stanbolURL,
+        //    enhancer: {
+        //        chain: t.$("form.chooseEnhancerChain select[name=chain]").val()
+        //    }
+        //}));
 
        // t.$('form.chooseEnhancerChain textarea[name=content]').annotate({
        //     vie: z,

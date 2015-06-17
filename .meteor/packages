@@ -18,3 +18,8 @@ mizzao:jquery-ui
 webix:webix
 webix:skin-flat
 fortawesome:fontawesome
+meteorhacks:npm
+
+
+npm-container
+d3js:d3
