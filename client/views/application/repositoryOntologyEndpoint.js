@@ -74,9 +74,9 @@ Template.repositoryOnto.events({
         });
         console.log("Ontology : "+ onto.name + " added from the repository");
         refreshListOnto();
-
     }
 });
+
 function test() {
     var graph = Viva.Graph.graph();
     graph.addNode('bruno', '4b2188722d3b8197d775f6b665f5f253');
@@ -87,8 +87,6 @@ function test() {
     graph.addLink(1, 2);
     graph.addLink(2, 3);
     graph.addLink(3, 1);
-
-
 
     var graphics = Viva.Graph.View.svgGraphics();
     graphics.node(function(node) {

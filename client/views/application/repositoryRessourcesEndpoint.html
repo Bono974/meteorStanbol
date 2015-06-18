@@ -55,25 +55,31 @@ Métadonnées de la ressource selectionnée : {{ressourceSelect}} <br/> <br/>
     </form>
 --> 
 
-{{> upload_bootstrap }}
+<!-- {{> upload_bootstrap }} -->
 </template>
 
 
 <template name="enhancer">
-    Enhancer : <br/> 
+    Enhancer Stateless : <br/>
     <form action="" class="chooseEnhancerChain">
+
+        <br/>
         Chain : <select name="chain">
             {{#each listChains}}
             <option value={{.}}> {{.}} </option>
             {{/each}}
         </select>
-        <button type="submit" value="enhancerProcess"> Annoter </button>
-
         <br/>
-        <textarea name="content"> 
-            TODO : integrer ace editor ici. 
+
+        <input type=file name="ressource"/>
+        <button type="submit" value="enhancerProcess"> Annoter </button>
+        <br/>
+        <br/>
+        <br/>
+        <textarea name="content">
+            TODO : integrer ace editor ici.
         </textarea>
     </form>
 
-    <br/> 
+    <br/>
 </template>

@@ -31,11 +31,7 @@ Template.repositoryRessource.events({
         event.preventDefault();
         var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
         Session.set('ressourceSelected', ressource);
-        Meteor.call('getMetaRessource', ressource, function(error, results) {
-            Session.set('ressourceMETA', results);
-            //Session.set('enhancedContent', results.enhanced);
-            return results;
-        });
+
     },
     "click button[value=delete]": function(event, t){
         event.preventDefault();
@@ -99,9 +95,6 @@ Meteor.startup(function () {
         success: success,
         error: error
     });
-
-
-
 });
 
 Template.enhancer.listChains = function() {
@@ -115,20 +108,30 @@ Template.enhancer.events({
         //TODO : REVOIR jQuery UI
         event.preventDefault();
 
-        var dataToAnnotate = t.$("form.chooseEnhancerChain textarea[name=content]");
-        dataToAnnotate = dataToAnnotate[0].value;
-        console.log(dataToAnnotate);
+        var ressourceToAnnotate = $('input[name=ressource]')[0].files[0];
+        var chain = t.$("select [name=chain]");
+        var url = stanbolURL + "/enhancer/chain/" + "all-active";
 
-        var uri = stanbolURL + "/enhancer/chain/all-active";
+        //var form = new FormData({
+        //    version: "1.0.0-rc1"
+        //});
 
+
+        function success(res) {
+            console.log(res);
+        }
+        function error(xhr) {
+            console.log(xhr);
+        }
         $.ajax({
+            url: url,
             type: "POST",
-            url: uri,
-            data: {query: query},
-            accepts: ["application/json"],
-                // dataType: "application/json",
+            data: ressourceToAnnotate,
+            accept: 'application/json',
             success: success,
-            error: error
+            error: error,
+            processData: false,  // tell jQuery not to process the data
+            contentType: false   // tell jQuery not to set contentType
         });
 
 
