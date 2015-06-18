@@ -14,29 +14,7 @@ Meteor.methods({
     },
     addOntology: function(onto, format) {
         this.unblock();
-
-        var FormData = Meteor.npmRequire('form-data');
-        //var form = new FormData({
-        //    version: "1.0.0-rc1"
-        //});
-
-        var form = new FormData();
-
-        //var filePath = '../../../../../.uploads/' + onto;
-        var filePath = '../../../../../.uploads/atc.owl';
-        //form.append('file', filePath);
-        form.append('format', format);
-        form.append('file', fs.readFile(filePath));
-        var url = stanbolURL+"/servomap/add/";
-
-        //console.log(form);
-        return HTTP.call(
-                'POST',
-                url,
-                {
-                    content: form.content,
-                    headers: form.headers
-                });
+        // NO NEED : Client
     },
     deleteOnto: function(onto) {
         this.unblock();

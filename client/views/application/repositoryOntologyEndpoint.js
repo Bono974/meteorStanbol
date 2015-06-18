@@ -1,3 +1,5 @@
+var stanbolURL = "http://localhost:8081";
+
 Meteor.call('getListOnto', function(error, results) {
     Session.set('listOnto', results.content);
     return results.content;
@@ -23,6 +25,13 @@ Template.metadata.ontoSelect = function() {
     return str;
 };
 
+function refreshListOnto() {
+    Meteor.call('getListOnto', function(error, results) {
+        Session.set('listOnto', results.content);
+        return results.content;
+    });
+}
+
 Template.repositoryOnto.events({
     "click button[value=open]": function(event, t){
         event.preventDefault();
@@ -40,24 +49,32 @@ Template.repositoryOnto.events({
         if (confirm("Êtes vous sûr de vouloir supprimer l'ontologie " + onto + " du dépôt ?")) {
             Meteor.call('deleteOnto', onto);
             console.log("Ontology :"+ onto + " deleted from the repository");
-            Meteor.call('getListOnto', function(error, results) {
-                Session.set('listOnto', results.content);
-                return results.content;
-            });
+            refreshListOnto();
         }
      },
     "click button[value=addOntology]": function(event, t) {
         event.preventDefault();
-        var onto = t.$("form.addOntology input[name=ontology]").val();
+        var onto = $('input[name=ontology]')[0].files[0];
         var format = t.$("form.addOntology select[name=format]").val();
 
-        console.log(onto);
-        console.log(format);
-        Meteor.call('addOntology', onto, format, function(error, results) {
-            //console.log(error);
-            console.log(results);
-            return results;
+        //var stanbolURL = "http://localhost:8081";
+        var url = stanbolURL+"/ontonet/";
+        var form = new FormData({
+            version: "1.0.0-rc1"
         });
+
+        form.append("format", format);
+        form.append("file", onto);
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: form,
+            processData: false,  // tell jQuery not to process the data
+            contentType: false   // tell jQuery not to set contentType
+        });
+        console.log("Ontology : "+ onto.name + " added from the repository");
+        refreshListOnto();
+
     }
 });
 function test() {
@@ -89,7 +106,6 @@ function test() {
     renderer.run();
 }
 
-
 function exec() {
     /* Uncomment to see debug information in console */
     d3sparql.debug = true;
@@ -107,9 +123,7 @@ function render(json) {
     d3sparql.forcegraph(json, config)
 }
 
-
 Template.visualisation.rendered = function() {
     test();
     //exec();
 };
-
