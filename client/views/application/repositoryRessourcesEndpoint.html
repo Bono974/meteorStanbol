@@ -41,21 +41,11 @@ Métadonnées de la ressource selectionnée : {{ressourceSelect}} <br/> <br/>
 </template>
 
 <template name="uploadRessource">
-<!-- 
-    <form method="POST" enctype="multipart/form-data">
-        <input type="file" class="jqUploadclass" data-form-data='{{ submitData }}'>
-        {{#with infoLabel}}
-            {{ infoLabel}} <button class="start">StartUpload</button>
-            <div style="width: 200px; height: 30px; border: 1px solid black">
-                <div style="background: red; height: 30px; width: {{ progress }}">
-                    {{ progress }}
-                </div>
-            </div>
-        {{/with}}
+    <form method="POST" class="addRessource">
+        <input type="text" name="filename" value="Nom du document"><br>
+        <input type="text" name="author" value="Auteur"><br>
+        <input type="file"> <button type="submit" value="addRessource"> Ajouter</button>
     </form>
---> 
-
-<!-- {{> upload_bootstrap }} -->
 </template>
 
 
@@ -76,8 +66,9 @@ Métadonnées de la ressource selectionnée : {{ressourceSelect}} <br/> <br/>
         <br/>
         <br/>
         <br/>
-        <textarea name="content">
-            TODO : integrer ace editor ici.
+        <!--TODO : integrer ace editor ici.-->
+        <textarea name="content" cols=50 rows=25>
+            {{enhancedContent}}
         </textarea>
     </form>
 

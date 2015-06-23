@@ -1,4 +1,6 @@
 var stanbolURL = "http://localhost:8081";
+var couchDBURL = "http://localhost:5984";
+
 Meteor.call('getListRessources', function(error, results) {
     Session.set('ressources', results);
     return results.content;
@@ -11,7 +13,6 @@ Template.repositoryRessource.enhancerRES = function() {
 
 Template.repositoryRessource.listRessources = function() {
     var str = Session.get('ressources');
-    console.log(str);
     return str.split(',');
 };
 
@@ -25,6 +26,10 @@ Template.metaRessource.METAressources = function() {
     return str;
 };
 
+Template.enhancer.enhancedContent = function() {
+    var str = Session.get('enhancedContent');
+    return str;
+}
 Template.repositoryRessource.events({
     "click button[value=open]": function(event, t){
         //code for submit
@@ -45,15 +50,7 @@ Template.repositoryRessource.events({
                 return results;
             });
         }
-    },
-    "click button[value=addRessource]": function(event, t) {
-        event.preventDefault();
-        var ressource = t.$("form.addRessource input[type=file]").val();
-        Meteor.call('addRessource', ressource, function(error, results) {
-            console.log(results);
-            return results;
-        });
-    },
+    }
 });
 Meteor.startup(function () {
     var query = "PREFIX enhancer: <http://stanbol.apache.org/ontology/enhancer/enhancer#> \n" +
@@ -66,7 +63,6 @@ Meteor.startup(function () {
         "ORDER BY ASC(?name) ";
 
     function success(res) {
-        console.log(res);
         var chains = $('binding[name=name] literal', res).map(function () {
             return this.textContent;
         }).toArray();
@@ -99,30 +95,30 @@ Meteor.startup(function () {
 
 Template.enhancer.listChains = function() {
     var str = Session.get('chains');
-    console.log(str);
     return str;
 };
 
 Template.enhancer.events({
     "click button[value=enhancerProcess]": function(event, t) {
-        //TODO : REVOIR jQuery UI
         event.preventDefault();
 
         var ressourceToAnnotate = $('input[name=ressource]')[0].files[0];
-        var chain = t.$("select [name=chain]");
-        var url = stanbolURL + "/enhancer/chain/" + "all-active";
+        var chain = t.$("form.chooseEnhancerChain select[name=chain]")[0];
+        chain = chain[chain.selectedIndex].value;
+        var url = stanbolURL + "/enhancer/chain/" + chain;
 
-        //var form = new FormData({
-        //    version: "1.0.0-rc1"
-        //});
-
+        function prettyPrint() {
+            var ugly = document.getElementById('myTextArea').value;
+            var obj = JSON.parse(ugly);
+            var pretty = JSON.stringify(obj, undefined, 4);
+            document.getElementById('myTextArea').value = pretty;
+        }
 
         function success(res) {
             console.log(res);
-        }
-        function error(xhr) {
-            console.log(xhr);
-        }
+            Session.set("enhancedContent", JSON.stringify(res));
+        } // TODO : --> CouchDB
+        function error(xhr) { console.log(xhr); }
         $.ajax({
             url: url,
             type: "POST",
@@ -133,76 +129,54 @@ Template.enhancer.events({
             processData: false,  // tell jQuery not to process the data
             contentType: false   // tell jQuery not to set contentType
         });
-
-
-        //var z = new VIE();
-        //z.use(new z.StanbolService({
-        //    url : stanbolURL,
-        //    enhancer: {
-        //        chain: t.$("form.chooseEnhancerChain select[name=chain]").val()
-        //    }
-        //}));
-
-       // t.$('form.chooseEnhancerChain textarea[name=content]').annotate({
-       //     vie: z,
-       //     // typeFilter: ["http://dbpedia.org/ontology/Place", "http://dbpedia.org/ontology/Organisation", "http://dbpedia.org/ontology/Person"],
-       //     debug: true,
-       //     continuousChecking: true,
-       //         //autoAnalyze: true,
-       //     showTooltip: true,
-       //     decline: function(event, ui){
-       //         console.info('decline event', event, ui);
-       //     },
-       //     select: function(event, ui){
-       //         console.info('select event', event, ui);
-       //     },
-       //     remove: function(event, ui){
-       //         console.info('remove event', event, ui);
-       //     },
-       //     success: function(event, ui){
-       //         console.info('success event', event, ui);
-       //     },
-       //     error: function(event, ui){
-       //         console.info('error event', event, ui);
-       //         alert(ui.message);
-       //     }
-       // });
     }
 });
 
 
-//Template.uploadRessource.events({
-//    'click .start': function (e) {
-//        Uploader.startUpload.call(Template.instance(), e);
-//    }
-//});
-//
-//Template.uploadRessource.created = function() {
-//    Uploader.init(this);
-//}
-//
-//Template.uploadRessource.rendered = function () {
-//    Uploader.render.call(this);
-//};
-//
-//Template.uploadRessource.helpers({
-//    'infoLabel': function() {
-//        var instance = Template.instance();
-//
-//        // we may have not yet selected a file
-//        var info = instance.info.get()
-//            if (!info) {
-//                return;
-//            }
-//
-//        var progress = instance.globalInfo.get();
-//
-//        // we display different result when running or not
-//        return progress.running ?
-//            info.name + ' - ' + progress.progress + '% - [' + progress.bitrate + ']' :
-//            info.name + ' - ' + info.size + 'B';
-//    },
-//    'progress': function() {
-//        return Template.instance().globalInfo.get().progress + '%';
-//    }
-//})
+Template.uploadRessource.events({
+    "click button[value=addRessource]": function(event, t) {
+        event.preventDefault();
+        var filename = t.$("form.addRessource input[name=filename]").val();
+        var author = t.$("form.addRessource input[name=author]").val();
+        var ressource = t.$("form.addRessource input[type=file]")[0].files[0];
+
+        if (typeof ressource === "undefined") {
+            alert("Il n'y a aucun fichier selectionné !");
+            return;
+        }
+
+        function addAttachment(filename, author, rev, id) {
+            Meteor.call("addAttachment", filename, author, rev, id, ressource, function(errors, results) {
+            console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
+            console.log("Auteur: " + author);
+            console.log("HTML5 input file: " + ressource);
+
+            console.log("------------");
+
+            });
+        }
+
+        Meteor.call("checkRessource", filename, author, function(errors, results) {
+            console.log(results);
+            var rev = "revisionTemp";
+            if (results.checked == true) {
+                // document already exists with same name
+                // ask another name ?
+                // ask if we do another enhancement with another chain ?
+                // ask if we erase attachment ?
+                if (confirm("Un document au nom de " + filename + " est déjà présent dans la BDD par " + results.author + "avec la même ou une différente pièce jointe. Souhaitez vous le remplacer par le document choisi ? ")) {
+                    // do something
+                    addAttachment(filename, author, results.rev, results.id);
+                } else {
+                    // do nothing, let user change his entries
+                }
+            } else {
+                Meteor.call("addRessource", filename, author, function(errors, results) {
+                    var rev = results.rev;
+                    var id = results.id;
+                    addAttachment(filename, author, rev, id);
+                });
+            }
+        });
+    }
+});
