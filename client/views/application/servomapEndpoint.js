@@ -3,11 +3,6 @@ Meteor.call('getListOnto', function(error, results) {
     return results.content;
 });
 
-Template.servomap.listOntos = function() {
-    var str = Session.get('listOnto');
-    return str.split(',');
-};
-
 Template.servomap.events({
     'submit .align2ontos': function(event) {
         event.preventDefault();
@@ -22,11 +17,11 @@ Template.servomap.events({
 });
 
 Template.servomap.helpers({
-    ontoSelectedDUM:function(){
+    "ontoSelectedDUM": function(){
         return Session.get('ontoSelected');
+    },
+    "listOntos": function() {
+        var str = Session.get('listOnto');
+        return str.split(',');
     }
-});
-
-Template.registerHelper("selectedIfEquals",function(left,right){
-    return left==right?"selected":"";
 });

@@ -5,25 +5,27 @@ Meteor.call('getListOnto', function(error, results) {
     return results.content;
 });
 
-Template.repositoryOnto.listOntos = function() {
-    var str = Session.get('listOnto');
-    return str.split(',');
-};
+Template.repositoryOnto.helpers({
+    "listOntos": function() {
+        var str = Session.get('listOnto');
+        return str.split(',');
+    }
+});
 
-Template.metadata.METAS = function() {
-    var str = Session.get('META');
+Template.metadata.helpers({
+    "METAS": function() {
+        var str = Session.get('META');
 
-    var parsed = JSON.parse(str);
-    var arr = [];
-    for(var x in parsed)
-        arr.push( "--" + x + " : " + parsed[x]);
-    return arr;
-};
-
-Template.metadata.ontoSelect = function() {
-    var str = Session.get('ontoSelected');
-    return str;
-};
+        var parsed = JSON.parse(str);
+        var arr = [];
+        for(var x in parsed)
+            arr.push( "--" + x + " : " + parsed[x]);
+        return arr;
+    },
+    "ontoSelect": function() {
+        return Session.get('ontoSelected');
+    }
+});
 
 function refreshListOnto() {
     Meteor.call('getListOnto', function(error, results) {
@@ -77,7 +79,11 @@ Template.repositoryOnto.events({
     }
 });
 
-function test() {
+Template.visualisation.rendered = function() {
+    render();
+};
+
+function render() {
     var graph = Viva.Graph.graph();
     graph.addNode('bruno', '4b2188722d3b8197d775f6b665f5f253');
     graph.addLink(1, 'bruno');
@@ -103,25 +109,3 @@ function test() {
             });
     renderer.run();
 }
-
-function exec() {
-    /* Uncomment to see debug information in console */
-    d3sparql.debug = true;
-    var endpoint =  "http://localhost:8080/marmotta/sparql"; // d3.select("#endpoint").property("value");
-    var sparql = "SELECT * WHERE { ?subject rdfs:subClassOf ?object .  } LIMIT 100";
-       // d3.select("#sparql").property("value");
-    d3sparql.query(endpoint, sparql, render);
-}
-
-function render(json) {
-    /* set options and call the d3spraql.xxxxx function in this library ... */
-    var config = {
-        "selector": "#testd3"
-    }
-    d3sparql.forcegraph(json, config)
-}
-
-Template.visualisation.rendered = function() {
-    test();
-    //exec();
-};

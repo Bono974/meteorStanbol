@@ -1,6 +1,5 @@
 var stanbolURL = "http://localhost:8081";
-var couchDBURL = "http://localhost";
-var couchDBPORT = 5984;
+var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
 var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database('ressources');
 
 var tempDirectoryToAnnotate = '../../../../../.uploads/toAnnotate/';
@@ -26,35 +25,21 @@ Meteor.methods({
         this.unblock();
         return HTTP.call("DELETE", stanbolURL+"/ontonet/"+onto)
     },
-
     getMetaRessource: function(ressource) {
         this.unblock();
+        // TODO : get enhancement from Couchdb with doc._id
 
-        var url = stanbolURL+"/enhancer/chain/all-active";
-        var filePath = '../../../../../.uploads/' + ressource;
-        var fileStream = fs.createReadStream(filePath);
-        var parts = {
-            file: fileStream
-        };
-
-        var formData = MultipartFormData(parts);
-        return HTTP.call(
-                'POST',
-                url,
-                {
-                    content: formData.content,
-                    headers: formData.headers
-                });
     },
     getListRessources: function() {
         this.unblock();
-        var files = fs.readdirSync('../../../../../.uploads');
-        //TODO : fetch all documents from Apache CouchDB
-        var i = files.indexOf("tmp");
-        if(i != -1)
-            files.splice(i, 1);
-        //TODO : remove all documents which start with 'enhanced_'
-        return files.join();
+        //TODO : get list Ressources from CouchDB
+
+        //var files = fs.readdirSync('../../../../../.uploads');
+        ////TODO : fetch all documents from Apache CouchDB
+        //var i = files.indexOf("tmp");
+        //if(i != -1)
+        //    files.splice(i, 1);
+        //return files.join();
     },
     fileUpload:function (filename, fileData) {
         var filePath = tempDirectoryToAnnotate + filename;
@@ -74,9 +59,9 @@ Meteor.methods({
                 };
             }
         });
-        if (!bool) {
+        if (!bool)
             res = { checked: false };
-        }
+
         console.log("CHECK RESSOURCE");
         console.log(res);
         return res;
@@ -97,14 +82,20 @@ Meteor.methods({
             var rev = res.rev;
 
             console.log(filename);
-            Meteor.call("addAttachment", filename, author, rev, id, extendedRessource, function(errors, results) {
-                console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
-                console.log("Auteur: " + author);
-                console.log("HTML5 input file: " + extendedRessource);
+            Meteor.call("addAttachment",
+                    filename,
+                    author,
+                    rev,
+                    id,
+                    extendedRessource,
+                    function(errors, results) {
+                        console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
+                        console.log("Auteur: " + author);
+                        console.log("HTML5 input file: " + extendedRessource);
 
-                console.log("------------");
+                        console.log("------------");
 
-            });
+                    });
         }));
     },
     addAttachment: function(filename, author, rev, id, ressource) {
@@ -143,16 +134,14 @@ Meteor.methods({
     },
     deleteRessource: function(ressource) {
         this.unblock();
-        var filePath = '../../../../../.uploads/' + ressource;
-        fs.unlinkSync(filePath);
-        return ressource + " DELETED";
-    },
-    getListChains: function() {
-        // NO NEED : client side
-        return 'toto, toto, toto';
+        //TODO : Delete from CouchDB
+        //var filePath = '../../../../../.uploads/' + ressource;
+        //fs.unlinkSync(filePath);
+        //return ressource + " DELETED";
     }
 });
 
+//FIXME : may be not useful from now
 Meteor.startup(function () {
   UploadServer.init({
     tmpDir:"../../../../../.uploads/tmp",
