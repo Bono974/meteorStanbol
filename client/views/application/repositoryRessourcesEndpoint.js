@@ -179,7 +179,7 @@ function addRessourceAnnotated(filename, author, ressource, enhancement) {
             // ask another name ?
             // ask if we do another enhancement with another chain ?
             // ask if we erase attachment ?
-            if (confirm("Un document au nom de " + filename + " est déjà présent dans la BDD par " + results.author + "avec la même ou une différente pièce jointe. Souhaitez vous le remplacer par le document choisi ? ")) {
+            if (confirm("Un document au nom de " + filename + " est déjà présent dans la BDD par " + "FIXME" + "avec la même ou une différente pièce jointe. Souhaitez vous le remplacer par le document choisi ? ")) {
                 // do something
                 console.log(ressource);
 
@@ -191,23 +191,31 @@ function addRessourceAnnotated(filename, author, ressource, enhancement) {
                     type : ressource.type,
                 };
                 // TODO : Modify enhancement field
-                addAttachment(filename, author, rev, id, extendedRessource);
+                //addAttachment(filename, author, rev, id, extendedRessource);
+
+                Meteor.call("addAttachment", filename, author, rev, id, extendedRessource);
+
             } else {
                 // do nothing, let user change his entries
             }
         }
         else {
-            Meteor.call("addRessource", filename, author, enhancement, function(errors, results) {
-                Meteor.call("checkRessource", filename, author, function(errors, results) {
-                    var rev = results.rev;
-                    var id = results.id;
-                    console.log(ressource);
-                    var extendedRessource = {
-                        name : ressource.name,
-                        type : ressource.type,
-                    };
-                    addAttachment(filename, author, rev, id, extendedRessource);
-                });
+
+                var extendedRessource = {
+                    name : ressource.name,
+                    type : ressource.type,
+                };
+            Meteor.call("addRessourceAnnotated", filename, author, extendedRessource, enhancement, function(errors, results) {
+
+                    console.log(results);
+                    //var id = results.id;
+                    //var rev = results.rev;
+                    //var extendedRessource = {
+                    //    name : ressource.name,
+                    //    type : ressource.type,
+                    //};
+                    //addAttachment(filename, author, rev, id, extendedRessource);
+                //});
             });
         }
     });
@@ -229,9 +237,12 @@ Template.uploadRessource.events({
             var reader = new FileReader();
             reader.onload = function(fileLoadEvent) {
                 var name = ressource.name.toString();
-                Meteor.call('fileUpload', name, reader.result);
+                var buffer = new Uint8Array(reader.result)
+                //Meteor.call('fileUpload', name, reader.result);
+                Meteor.call('fileUpload', name, buffer);
             };
-            reader.readAsBinaryString(ressource);
+            //reader.readAsBinaryString(ressource);
+            reader.readAsArrayBuffer(ressource);
             processFileToCouchDB(filename, author, ressource);  // FIXME : AND ADD TO COUCHDB
         }
     }

@@ -3,6 +3,8 @@ var couchDBURL = "http://localhost";
 var couchDBPORT = 5984;
 var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database('ressources');
 
+var tempDirectoryToAnnotate = '../../../../../.uploads/toAnnotate/';
+
 Meteor.methods({
     getListOnto: function() {
         this.unblock();
@@ -55,21 +57,22 @@ Meteor.methods({
         return files.join();
     },
     fileUpload:function (filename, fileData) {
-        var filePath = '../../../../../.uploads/' + filename;
+        var filePath = tempDirectoryToAnnotate + filename;
         console.log(filePath);
-        fs.writeFile(filePath, fileData);
+        fs.writeFile(filePath, new Buffer(fileData));
     },
     checkRessource: function(filename, author) {
         var res;
         var bool = false;
         db.get(filename, function (err, doc) {
-            bool = true;
-            res = {
-                checked: true,
-                author : doc.author,
-                rev : doc.rev,
-                id : doc.id
-            };
+            if (typeof doc != "undefined") {
+                bool = true;
+                res = { // FIXME Get author with view
+                    checked: true,
+                    rev : doc._rev,
+                    id : doc._id
+                };
+            }
         });
         if (!bool) {
             res = { checked: false };
@@ -78,22 +81,31 @@ Meteor.methods({
         console.log(res);
         return res;
     },
-    addRessource: function(filename, author, enhancement) {
+    addRessourceAnnotated: function(filename, author, extendedRessource, enhancement) {
         this.unblock();
 
-        var revT = "revTemp";
         db.save(filename, {
             filename: filename,
             author: author,
             enhancement : enhancement
-        }, function (err, res) {
-            if (err)
-                console.log(err);
-            else {
-                revT = { rev: res.rev }
-            }
-        });
-        return revT;
+        }, Meteor.bindEnvironment(function (err, res) {
+            console.log("ADD RESSOURCE");
+            if (err) console.log(err);
+            else console.log(res);
+
+            var id = res.id;
+            var rev = res.rev;
+
+            console.log(filename);
+            Meteor.call("addAttachment", filename, author, rev, id, extendedRessource, function(errors, results) {
+                console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
+                console.log("Auteur: " + author);
+                console.log("HTML5 input file: " + extendedRessource);
+
+                console.log("------------");
+
+            });
+        }));
     },
     addAttachment: function(filename, author, rev, id, ressource) {
         this.unblock();
@@ -110,7 +122,7 @@ Meteor.methods({
         console.log(doc);
         console.log(ressource);
 
-        var filePath = '../../../../../.uploads/' + ressource.name;
+        var filePath = tempDirectoryToAnnotate + ressource.name;
         console.log("FILEPATH" + filePath);
         var readStream = fs.createReadStream(filePath);
 
