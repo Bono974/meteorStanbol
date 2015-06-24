@@ -78,13 +78,14 @@ Meteor.methods({
         console.log(res);
         return res;
     },
-    addRessource: function(filename, author) {
+    addRessource: function(filename, author, enhancement) {
         this.unblock();
 
         var revT = "revTemp";
         db.save(filename, {
             filename: filename,
-            author: author
+            author: author,
+            enhancement : enhancement
         }, function (err, res) {
             if (err)
                 console.log(err);

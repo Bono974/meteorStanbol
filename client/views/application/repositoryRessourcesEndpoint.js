@@ -132,6 +132,86 @@ Template.enhancer.events({
     }
 });
 
+function processFileToCouchDB(filename, author, ressourceToAnnotate){ // FIXME : AND ADD TO COUCHDB
+    var chain = $("form.chooseEnhancerChain select[name=chain]")[0]; // TODO : change
+    chain = chain[chain.selectedIndex].value;
+    var url = stanbolURL + "/enhancer/chain/" + chain;
+
+
+    function success(res) {
+        console.log(res);
+        addRessourceAnnotated(filename, author, ressourceToAnnotate, res);
+    }
+
+    function error(xhr) {
+        console.log(xhr);
+        console.log("Enhancement failed, redo again with another chain ? -- No new document created in CouchDB");
+    }
+
+    $.ajax({
+        url: url,
+        type: "POST",
+        data: ressourceToAnnotate,
+        accept: 'application/json',
+        success: success,
+        error: error,
+        processData: false,  // tell jQuery not to process the data
+        contentType: false   // tell jQuery not to set contentType
+    });
+}
+
+function addRessourceAnnotated(filename, author, ressource, enhancement) {
+    function addAttachment(filename, author, rev, id, ressource) {
+        Meteor.call("addAttachment", filename, author, rev, id, ressource, function(errors, results) {
+            console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
+            console.log("Auteur: " + author);
+            console.log("HTML5 input file: " + ressource);
+
+            console.log("------------");
+            console.log(ressource);
+
+        });
+    }
+    Meteor.call("checkRessource", filename, author, function(errors, results) {
+        console.log(results);
+        if (results.checked == true) {
+            // document already exists with same name
+            // ask another name ?
+            // ask if we do another enhancement with another chain ?
+            // ask if we erase attachment ?
+            if (confirm("Un document au nom de " + filename + " est déjà présent dans la BDD par " + results.author + "avec la même ou une différente pièce jointe. Souhaitez vous le remplacer par le document choisi ? ")) {
+                // do something
+                console.log(ressource);
+
+                var rev = results.rev;
+                var id = results.id;
+
+                var extendedRessource = {
+                    name : ressource.name,
+                    type : ressource.type,
+                };
+                // TODO : Modify enhancement field
+                addAttachment(filename, author, rev, id, extendedRessource);
+            } else {
+                // do nothing, let user change his entries
+            }
+        }
+        else {
+            Meteor.call("addRessource", filename, author, enhancement, function(errors, results) {
+                Meteor.call("checkRessource", filename, author, function(errors, results) {
+                    var rev = results.rev;
+                    var id = results.id;
+                    console.log(ressource);
+                    var extendedRessource = {
+                        name : ressource.name,
+                        type : ressource.type,
+                    };
+                    addAttachment(filename, author, rev, id, extendedRessource);
+                });
+            });
+        }
+    });
+}
 
 Template.uploadRessource.events({
     "click button[value=addRessource]": function(event, t) {
@@ -144,7 +224,7 @@ Template.uploadRessource.events({
             alert("Il n'y a aucun fichier selectionné !");
             return;
         } else {
-            // Upload in temporary server folder
+            // Upload in temporary server folder then upload as attachment to doc in CouchDB
             // check if ressource already been uploaded
             var reader = new FileReader();
             reader.onload = function(fileLoadEvent) {
@@ -152,58 +232,7 @@ Template.uploadRessource.events({
                 Meteor.call('fileUpload', name, reader.result);
             };
             reader.readAsBinaryString(ressource);
+            processFileToCouchDB(filename, author, ressource);  // FIXME : AND ADD TO COUCHDB
         }
-
-        function addAttachment(filename, author, rev, id, ressource) {
-            Meteor.call("addAttachment", filename, author, rev, id, ressource, function(errors, results) {
-            console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
-            console.log("Auteur: " + author);
-            console.log("HTML5 input file: " + ressource);
-
-            console.log("------------");
-            console.log(ressource);
-
-            });
-        }
-
-        Meteor.call("checkRessource", filename, author, function(errors, results) {
-            console.log(results);
-            var rev = "revisionTemp";
-            if (results.checked == true) {
-                // document already exists with same name
-                // ask another name ?
-                // ask if we do another enhancement with another chain ?
-                // ask if we erase attachment ?
-                if (confirm("Un document au nom de " + filename + " est déjà présent dans la BDD par " + results.author + "avec la même ou une différente pièce jointe. Souhaitez vous le remplacer par le document choisi ? ")) {
-                    // do something
-                    console.log(ressource);
-
-                    var rev = results.rev;
-                    var id = results.id;
-
-                    var extendedRessource = {
-                        name : ressource.name,
-                        type : ressource.type,
-                    };
-                    addAttachment(filename, author, rev, id, extendedRessource);
-                } else {
-                    // do nothing, let user change his entries
-                }
-            }
-            else {
-                Meteor.call("addRessource", filename, author, function(errors, results) {
-                    Meteor.call("checkRessource", filename, author, function(errors, results) {
-                        var rev = results.rev;
-                        var id = results.id;
-                        console.log(ressource);
-                        var extendedRessource = {
-                            name : ressource.name,
-                            type : ressource.type,
-                        };
-                        addAttachment(filename, author, rev, id, extendedRessource);
-                    });
-                });
-            }
-        });
     }
 });
