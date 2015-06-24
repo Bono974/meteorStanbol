@@ -54,6 +54,11 @@ Meteor.methods({
         //TODO : remove all documents which start with 'enhanced_'
         return files.join();
     },
+    fileUpload:function (filename, fileData) {
+        var filePath = '../../../../../.uploads/' + filename;
+        console.log(filePath);
+        fs.writeFile(filePath, fileData);
+    },
     checkRessource: function(filename, author) {
         var res;
         var bool = false;
@@ -69,6 +74,7 @@ Meteor.methods({
         if (!bool) {
             res = { checked: false };
         }
+        console.log("CHECK RESSOURCE");
         console.log(res);
         return res;
     },
@@ -91,47 +97,36 @@ Meteor.methods({
     addAttachment: function(filename, author, rev, id, ressource) {
         this.unblock();
 
-        //var revT = "revTemp";
-        //Update some informations
-//        db.merge(filename, rev, {
-//            author: author,
-//            filename: filename
-//        }, function (err, res) {
-//            if (err)
-//                console.log(err);
-//            else
-//                revT = { rev: res.rev };
-//        });
-
-        // this document should already be saved in the couchdb database
         var doc = {
             _id: id,
             _rev: rev
-        }
+        };
         var idData = {
             id: doc._id,
             rev: doc._rev
-        }
-        console.log(doc);
-        //var filename = 'bar.pdf';
-        //var filePath = path.join(__dirname, 'data', 'bar.pdf');
-        //var readStream = fs.createReadStream();
-        // note that there is no body field here since we are streaming the upload
-        var attachmentData = {
-//            name: ressource.name,
-//            'Content-Type': ressource.type
-  name: 'fooAttachment.txt',
-  'Content-Type': 'text/plain',
-  body: 'Foo document text'
         };
-        db.saveAttachment(idData, attachmentData, function (err, reply) {
-            if (err) {
-                console.dir(err);
-                return;
-            }
-            console.dir(reply);
-        }, ressource);
+        console.log("ADD ATTACHMENT");
+        console.log(doc);
+        console.log(ressource);
 
+        var filePath = '../../../../../.uploads/' + ressource.name;
+        console.log("FILEPATH" + filePath);
+        var readStream = fs.createReadStream(filePath);
+
+        var attachmentData = {
+            name: ressource.name,
+            'Content-Type': ressource.type
+        };
+        var writeStream = db.saveAttachment(idData,
+                attachmentData,
+                function (err, reply) {
+                    if (err) {
+                        console.dir(err);
+                        return;
+                    }
+                    console.dir(reply);
+                });
+        readStream.pipe(writeStream)
     },
     deleteRessource: function(ressource) {
         this.unblock();

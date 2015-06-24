@@ -143,15 +143,25 @@ Template.uploadRessource.events({
         if (typeof ressource === "undefined") {
             alert("Il n'y a aucun fichier selectionné !");
             return;
+        } else {
+            // Upload in temporary server folder
+            // check if ressource already been uploaded
+            var reader = new FileReader();
+            reader.onload = function(fileLoadEvent) {
+                var name = ressource.name.toString();
+                Meteor.call('fileUpload', name, reader.result);
+            };
+            reader.readAsBinaryString(ressource);
         }
 
-        function addAttachment(filename, author, rev, id) {
+        function addAttachment(filename, author, rev, id, ressource) {
             Meteor.call("addAttachment", filename, author, rev, id, ressource, function(errors, results) {
             console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
             console.log("Auteur: " + author);
             console.log("HTML5 input file: " + ressource);
 
             console.log("------------");
+            console.log(ressource);
 
             });
         }
@@ -166,15 +176,32 @@ Template.uploadRessource.events({
                 // ask if we erase attachment ?
                 if (confirm("Un document au nom de " + filename + " est déjà présent dans la BDD par " + results.author + "avec la même ou une différente pièce jointe. Souhaitez vous le remplacer par le document choisi ? ")) {
                     // do something
-                    addAttachment(filename, author, results.rev, results.id);
+                    console.log(ressource);
+
+                    var rev = results.rev;
+                    var id = results.id;
+
+                    var extendedRessource = {
+                        name : ressource.name,
+                        type : ressource.type,
+                    };
+                    addAttachment(filename, author, rev, id, extendedRessource);
                 } else {
                     // do nothing, let user change his entries
                 }
-            } else {
+            }
+            else {
                 Meteor.call("addRessource", filename, author, function(errors, results) {
-                    var rev = results.rev;
-                    var id = results.id;
-                    addAttachment(filename, author, rev, id);
+                    Meteor.call("checkRessource", filename, author, function(errors, results) {
+                        var rev = results.rev;
+                        var id = results.id;
+                        console.log(ressource);
+                        var extendedRessource = {
+                            name : ressource.name,
+                            type : ressource.type,
+                        };
+                        addAttachment(filename, author, rev, id, extendedRessource);
+                    });
                 });
             }
         });
