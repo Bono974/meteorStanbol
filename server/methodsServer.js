@@ -1,6 +1,7 @@
 var stanbolURL = "http://localhost:8081";
 var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
-var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database('ressources');
+var dbRessource = "ressources";
+var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database(dbRessource);
 
 var tempDirectoryToAnnotate = '../../../../../.uploads/toAnnotate/';
 
@@ -25,21 +26,15 @@ Meteor.methods({
         this.unblock();
         return HTTP.call("DELETE", stanbolURL+"/ontonet/"+onto)
     },
-    getMetaRessource: function(ressource) {
+    getMetaRessource: function(ressourceID) {
         this.unblock();
-        // TODO : get enhancement from Couchdb with doc._id
-
     },
     getListRessources: function() {
         this.unblock();
-        //TODO : get list Ressources from CouchDB
+        var allDocs =  HTTP.call("GET", couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/_all_docs");
 
-        //var files = fs.readdirSync('../../../../../.uploads');
-        ////TODO : fetch all documents from Apache CouchDB
-        //var i = files.indexOf("tmp");
-        //if(i != -1)
-        //    files.splice(i, 1);
-        //return files.join();
+        var res = JSON.parse(allDocs.content);
+        return res;
     },
     fileUpload:function (filename, fileData) {
         var filePath = tempDirectoryToAnnotate + filename;
@@ -89,12 +84,10 @@ Meteor.methods({
                     id,
                     extendedRessource,
                     function(errors, results) {
-                        console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
-                        console.log("Auteur: " + author);
-                        console.log("HTML5 input file: " + extendedRessource);
-
-                        console.log("------------");
-
+                        //console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
+                        //console.log("Auteur: " + author);
+                        //console.log("HTML5 input file: " + extendedRessource);
+                        //console.log("------------");
                     });
         }));
     },
@@ -134,10 +127,12 @@ Meteor.methods({
     },
     deleteRessource: function(ressource) {
         this.unblock();
-        //TODO : Delete from CouchDB
-        //var filePath = '../../../../../.uploads/' + ressource;
-        //fs.unlinkSync(filePath);
-        //return ressource + " DELETED";
+
+        var temp = HTTP.call("HEAD",
+                couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/"+ressource);
+        var rev = temp.headers.etag.replace(/['"]+/g, '');
+        return HTTP.call("DELETE",
+                couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/"+ressource+"?rev="+rev);
     }
 });
 

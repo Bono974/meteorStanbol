@@ -2,6 +2,10 @@ var stanbolURL = "http://localhost:8081";
 var couchDBURL = "http://localhost:5984";
 
 Meteor.startup(function () {
+    Meteor.call('getListRessources', function(error, results) {
+        refreshListRessources(results);
+    });
+
     var query = "PREFIX enhancer: <http://stanbol.apache.org/ontology/enhancer/enhancer#> \n" +
         "PREFIX rdfs:     <http://www.w3.org/2000/01/rdf-schema#> \n" +
         "SELECT distinct ?name ?chain " +
@@ -42,18 +46,22 @@ Meteor.startup(function () {
     });
 });
 
-Meteor.call('getListRessources', function(error, results) {
-    Session.set('ressources', results);
-    return results.content;
-});
+function refreshListRessources(results) {
+    //FIXME :does not update template
+    var res = [];
+    for (var i = 0; i < results.rows.length; i++)
+        res.push(results.rows[i].id);
+    Session.set("ressources", res);
+    console.log(res);
+    return res;
+}
 
 Template.repositoryRessource.helpers({
     "enhancerRES": function() {
         return Session.get('enhancedContent');
     },
     "listRessources": function() {
-        var str = Session.get('ressources');
-        return str.split(',');
+        return Session.get('ressources');
     },
 });
 
@@ -66,71 +74,30 @@ Template.metaRessource.helpers({
     }
 });
 
-Template.enhancer.helpers({
+Template.uploadRessource.helpers({
     "enhancedContent": function() {
         return Session.get('enhancedContent');
     },
     "listChains": function() {
-        var str = Session.get('chains');
-        return str;
+        return Session.get('chains');
     }
 });
 
 Template.repositoryRessource.events({
     "click button[value=open]": function(event, t){
-        //code for submit
         event.preventDefault();
         var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
         Session.set('ressourceSelected', ressource);
-
     },
     "click button[value=delete]": function(event, t){
         event.preventDefault();
         var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
         if (confirm("Êtes vous sûr de vouloir supprimer le fichier " + ressource + " du dépôt ?")) {
-            Meteor.call('deleteRessource', ressource, function(error, results) {
-                console.log(results);
-            });
+            Meteor.call('deleteRessource', ressource);
             Meteor.call('getListRessources', function(error, results) {
-                Session.set('ressources', results);
-                return results;
+                return refreshListRessources(results);
             });
-        }
-    }
-});
-
-Template.enhancer.events({
-    "click button[value=enhancerProcess]": function(event, t) {
-        event.preventDefault();
-
-        var ressourceToAnnotate = $('input[name=ressource]')[0].files[0];
-        var chain = t.$("form.chooseEnhancerChain select[name=chain]")[0];
-        chain = chain[chain.selectedIndex].value;
-        var url = stanbolURL + "/enhancer/chain/" + chain;
-
-        function prettyPrint() {
-            var ugly = document.getElementById('myTextArea').value;
-            var obj = JSON.parse(ugly);
-            var pretty = JSON.stringify(obj, undefined, 4);
-            document.getElementById('myTextArea').value = pretty;
-        }
-
-        function success(res) {
-            console.log(res);
-            Session.set("enhancedContent", JSON.stringify(res));
-        } // TODO : --> CouchDB
-        function error(xhr) { console.log(xhr); }
-
-        $.ajax({
-            url: url,
-            type: "POST",
-            data: ressourceToAnnotate,
-            accept: 'application/json',
-            success: success,
-            error: error,
-            processData: false,  // tell jQuery not to process the data
-            contentType: false   // tell jQuery not to set contentType
-        });
+        };
     }
 });
 
@@ -145,7 +112,8 @@ Template.uploadRessource.events({
             alert("Il n'y a aucun fichier selectionné !");
             return;
         } else {
-            // TODO : couchdb view ? check if ressource already been uploaded
+            // TODO : couchdb view ?
+            // check if ressource already been uploaded with another or same chain
             var reader = new FileReader();
             reader.onload = function(fileLoadEvent) {
                 var name = ressource.name.toString();
@@ -159,7 +127,7 @@ Template.uploadRessource.events({
 });
 
 function processFileToCouchDB(filename, author, ressourceToAnnotate){
-    var chain = $("form.chooseEnhancerChain select[name=chain]")[0]; // FIXME : change
+    var chain = $("form.addRessource select[name=chain]")[0]; // FIXME : change
     chain = chain[chain.selectedIndex].value;
     var url = stanbolURL + "/enhancer/chain/" + chain;
 
@@ -217,10 +185,10 @@ function addRessourceAnnotated(filename, author, ressource, enhancement) {
             Meteor.call("addRessourceAnnotated",
                     filename,
                     author,
-                    xtendedRessource,
+                    extendedRessource,
                     enhancement,
                     function(errors, results) {
-                        console.log(results);
+                        //console.log(results);
                     });
         }
     });

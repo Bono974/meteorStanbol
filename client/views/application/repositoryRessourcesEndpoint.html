@@ -26,9 +26,6 @@
                 </section>
             </div>
         </div>
-        <div>
-            {{> enhancer}}
-        </div>
     </div>
 
 </div>
@@ -42,17 +39,6 @@ Métadonnées de la ressource selectionnée : {{ressourceSelect}} <br/> <br/>
 
 <template name="uploadRessource">
     <form method="POST" class="addRessource">
-        <input type="text" name="filename" value="Nom du document"><br>
-        <input type="text" name="author" value="Auteur"><br>
-        <input type="file"> <button type="submit" value="addRessource"> Ajouter</button>
-    </form>
-</template>
-
-
-<template name="enhancer">
-    Enhancer Stateless : <br/>
-    <form action="" class="chooseEnhancerChain">
-
         <br/>
         Chain : <select name="chain">
             {{#each listChains}}
@@ -61,16 +47,8 @@ Métadonnées de la ressource selectionnée : {{ressourceSelect}} <br/> <br/>
         </select>
         <br/>
 
-        <input type=file name="ressource"/>
-        <button type="submit" value="enhancerProcess"> Annoter </button>
-        <br/>
-        <br/>
-        <br/>
-        <!--TODO : integrer ace editor ici.-->
-        <textarea name="content" cols=50 rows=25>
-            {{enhancedContent}}
-        </textarea>
+        <input type="text" name="filename" value="Nom du document"><br/>
+        <input type="text" name="author" value="Auteur"><br/>
+        <input type="file"> <button type="submit" value="addRessource"> Ajouter</button>
     </form>
-
-    <br/>
 </template>
