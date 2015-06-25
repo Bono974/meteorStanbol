@@ -22,12 +22,10 @@ Meteor.startup(function () {
         if (_(chains).indexOf('default') != -1) {
             chains = _.union(['default'], chains);
         }
-        //cb(null, chains);
         Session.set('chains', chains);
         return chains;
     }
     function error(xhr) {
-        //cb(xhr);
         Session.set('chains', xhr);
         return xhr;
     }
@@ -38,9 +36,7 @@ Meteor.startup(function () {
         type: "POST",
         url: uri,
         data: {query: query},
-            // accepts: ["application/json"],
         accepts: {'application/json': 'application/sparql-results+json'},
-            // dataType: "application/json",
         success: success,
         error: error
     });
@@ -127,13 +123,53 @@ Template.uploadRessource.events({
 });
 
 function processFileToCouchDB(filename, author, ressourceToAnnotate){
-    var chain = $("form.addRessource select[name=chain]")[0]; // FIXME : change
+    Meteor.call("checkRessource", filename, function(errors, results) {
+        if (results.checked == true) {
+            if (confirm("Souhaitez vous écraser les annotations existantes (versionnées TODO) et le document attaché ?")) {
+                var settings = {
+                    type: "update",
+                    id: results.id,
+                    rev: results.rev,
+                    filename: filename,
+                    author: author
+                };
+                enhanceRessource(ressourceToAnnotate, settings);
+            } else return; // do nothing, let user change his entries
+        }
+        else {
+            var settings = {
+                type: "new",
+                id: results.id,
+                filename: filename,
+                author: author
+            };
+            enhanceRessource(ressourceToAnnotate, settings);
+        }
+    });
+}
+
+function enhanceRessource(ressourceToAnnotate, settings) {
+    var chain = $("form.addRessource select[name=chain]")[0];
     chain = chain[chain.selectedIndex].value;
     var url = stanbolURL + "/enhancer/chain/" + chain;
 
     function success(res) {
-        console.log(res);
-        addRessourceAnnotated(filename, author, ressourceToAnnotate, res);
+        var extendedRessource = {
+            name : ressourceToAnnotate.name,
+            type : ressourceToAnnotate.type
+        };
+        if (settings.type === "update") {
+            Meteor.call("updateEnhancementAndRessource", settings, res, extendedRessource);
+        } else if (settings.type === "new") {
+            Meteor.call("addRessourceAnnotated",
+                    settings.filename,
+                    settings.author,
+                    extendedRessource,
+                    res,
+                    function(errors, results) {
+                        //console.log(results);
+                    });
+        }
     }
 
     function error(xhr) {
@@ -151,45 +187,6 @@ function processFileToCouchDB(filename, author, ressourceToAnnotate){
         processData: false,  // tell jQuery not to process the data
         contentType: false   // tell jQuery not to set contentType
     });
-}
 
-function addRessourceAnnotated(filename, author, ressource, enhancement) {
-    Meteor.call("checkRessource", filename, author, function(errors, results) {
-        if (results.checked == true) {
-            // document already exists with same name
-            // ask another name ?
-            // ask if we do another enhancement with another chain ?
-            // ask if we erase attachment ?
-            if (confirm("Un document au nom de " + filename + " est déjà présent dans la BDD par " +
-                        " FIXME " +
-                        "avec la même ou une différente pièce jointe. "
-                        + "Souhaitez vous le remplacer par le document choisi ? ")) {
 
-                var rev = results.rev;
-                var id = results.id;
-
-                var extendedRessource = {
-                    name : ressource.name,
-                    type : ressource.type,
-                };
-                // TODO : Modify enhancement field
-                Meteor.call("addAttachment", filename, author, rev, id, extendedRessource);
-
-            } else return; // do nothing, let user change his entries
-        }
-        else {
-            var extendedRessource = {
-                name : ressource.name,
-                type : ressource.type,
-            };
-            Meteor.call("addRessourceAnnotated",
-                    filename,
-                    author,
-                    extendedRessource,
-                    enhancement,
-                    function(errors, results) {
-                        //console.log(results);
-                    });
-        }
-    });
 }

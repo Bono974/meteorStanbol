@@ -41,7 +41,7 @@ Meteor.methods({
         console.log(filePath);
         fs.writeFile(filePath, new Buffer(fileData));
     },
-    checkRessource: function(filename, author) {
+    checkRessource: function(filename) {
         var res;
         var bool = false;
         db.get(filename, function (err, doc) {
@@ -49,8 +49,8 @@ Meteor.methods({
                 bool = true;
                 res = { // FIXME Get author with view
                     checked: true,
-                    rev : doc._rev,
-                    id : doc._id
+                    id : doc._id,
+                    rev : doc._rev
                 };
             }
         });
@@ -64,14 +64,20 @@ Meteor.methods({
     addRessourceAnnotated: function(filename, author, extendedRessource, enhancement) {
         this.unblock();
 
+            console.log("ADD RESSOURCE");
         db.save(filename, {
             filename: filename,
             author: author,
             enhancement : enhancement
         }, Meteor.bindEnvironment(function (err, res) {
-            console.log("ADD RESSOURCE");
             if (err) console.log(err);
             else console.log(res);
+
+
+
+            console.log ("DEBUG");
+                console.log(res);
+            console.log ("DEBUG");
 
             var id = res.id;
             var rev = res.rev;
@@ -84,10 +90,10 @@ Meteor.methods({
                     id,
                     extendedRessource,
                     function(errors, results) {
-                        //console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
-                        //console.log("Auteur: " + author);
-                        //console.log("HTML5 input file: " + extendedRessource);
-                        //console.log("------------");
+//                        console.log("Document à modifier: " + filename + " rev: " + rev + " id:" + id);
+//                        console.log("Auteur: " + author);
+//                        console.log("HTML5 input file: " + extendedRessource);
+//                        console.log("------------");
                     });
         }));
     },
@@ -125,14 +131,73 @@ Meteor.methods({
                 });
         readStream.pipe(writeStream)
     },
+    getRevDocument: function(ressource) {
+        return HTTP.call("HEAD",
+                couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/"+ressource);
+    },
+    crushExistingRessource: function(id,
+                                    rev,
+                                    filename,
+                                    author,
+                                    extendedRessource,
+                                    enhancement) {
+
+        //var temp = Meteor.call('getRevDocument', id);
+        //var rev = temp.headers.etag.replace(/['"]+/g, '');
+        var url = couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/"+id+"?rev="+rev;
+        console.log(url);
+        HTTP.call("DELETE",
+                url,
+                function(errors, results) {
+                    Meteor.call("addRessourceAnnotated",
+                            filename,
+                            author,
+                            extendedRessource,
+                            enhancement,
+                            function(errors, results) {
+                                console.log(results);
+                                console.log(errors);
+                            });
+                });
+    },
     deleteRessource: function(ressource) {
         this.unblock();
 
-        var temp = HTTP.call("HEAD",
-                couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/"+ressource);
+        var temp = Meteor.call('getRevDocument', ressource);
         var rev = temp.headers.etag.replace(/['"]+/g, '');
         return HTTP.call("DELETE",
                 couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/"+ressource+"?rev="+rev);
+    },
+    updateEnhancementAndRessource: function(settings, enhancement, extendedRessource) {
+        this.unblock();
+        db.save(settings.id, settings.rev,
+                {   author: settings.author,
+                    filename: settings.filename,
+                    enhancement: enhancement },
+                Meteor.bindEnvironment(function (err, res) {
+                    console.log(res);
+                    Meteor.call("updateRessource",
+                            settings.id,
+                            res.rev,
+                            settings.filename,
+                            settings.author,
+                            extendedRessource,
+                            function(errors, results) {
+                                console.log("EOROJOOWJROJWEROJWOERJWE");
+                                console.log(errors);
+                                console.log(results);
+                            }); //FIXME : check if same ressource
+                }));
+    },
+    updateRessource: function(id, rev, filename, author, extendedRessource) {
+        this.unblock(); // FIXME Delete existing ressource
+        Meteor.call("addAttachment",
+                filename,
+                author,
+                rev,
+                id,
+                extendedRessource,
+                function(errors, results) { });
     }
 });
 
