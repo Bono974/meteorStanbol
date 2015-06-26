@@ -29,7 +29,6 @@ Meteor.startup(function () {
         Session.set('chains', xhr);
         return xhr;
     }
-
     var uri = stanbolURL + "/enhancer/sparql";
 
     $.ajax({
@@ -55,17 +54,17 @@ function refreshListRessources(results) {
 Template.repositoryRessource.helpers({
     "enhancerRES": function() {
         return Session.get('enhancedContent');
-    },
-    "listRessources": function() {
+    }, "listRessources": function() {
         return Session.get('ressources');
-    },
+    }, "doc": function() {
+        return JSON.stringify(Session.get('docSelected'), null, 2);
+    }
 });
 
 Template.metaRessource.helpers({
     "METAressources": function() {
         return Session.get('ressourceMETA');
-    },
-    "ressourceSelected": function() {
+    }, "ressourceSelected": function() {
         return Session.get('ressourceSelected');
     }
 });
@@ -73,8 +72,7 @@ Template.metaRessource.helpers({
 Template.uploadRessource.helpers({
     "enhancedContent": function() {
         return Session.get('enhancedContent');
-    },
-    "listChains": function() {
+    }, "listChains": function() {
         return Session.get('chains');
     }
 });
@@ -84,8 +82,13 @@ Template.repositoryRessource.events({
         event.preventDefault();
         var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
         Session.set('ressourceSelected', ressource);
-    },
-    "click button[value=delete]": function(event, t){
+
+        Meteor.call('getRessource', ressource, function(errors, results) {
+            console.log(results);
+            Session.set('docSelected', results.doc);
+        });
+
+    }, "click button[value=delete]": function(event, t){
         event.preventDefault();
         var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
         if (confirm("Êtes vous sûr de vouloir supprimer le fichier " + ressource + " du dépôt ?")) {
@@ -114,7 +117,7 @@ Template.uploadRessource.events({
             reader.onload = function(fileLoadEvent) {
                 var name = ressource.name.toString();
                 var buffer = new Uint8Array(reader.result)
-                Meteor.call('fileUpload', name, buffer);
+                    Meteor.call('fileUpload', name, buffer);
             };
             reader.readAsArrayBuffer(ressource);
             processFileToCouchDB(filename, author, ressource);
@@ -135,8 +138,7 @@ function processFileToCouchDB(filename, author, ressourceToAnnotate){
                 };
                 enhanceRessource(ressourceToAnnotate, settings);
             } else return; // do nothing, let user change his entries
-        }
-        else {
+        } else {
             var settings = {
                 type: "new",
                 id: results.id,
@@ -171,12 +173,10 @@ function enhanceRessource(ressourceToAnnotate, settings) {
                     });
         }
     }
-
     function error(xhr) {
         console.log(xhr);
         console.log("Enhancement failed, do it again with another chain ? -- No new document created in CouchDB");
     }
-
     $.ajax({
         url: url,
         type: "POST",
@@ -187,6 +187,4 @@ function enhanceRessource(ressourceToAnnotate, settings) {
         processData: false,  // tell jQuery not to process the data
         contentType: false   // tell jQuery not to set contentType
     });
-
-
 }

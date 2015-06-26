@@ -14,6 +14,10 @@
                     <button type="submit" value="open"> Ouvrir et visualiser </button>
                     <button type="submit" value="delete"> Supprimer du dépôt </button>
                 </form>
+                <br/>
+                <div>
+                    <textarea rows="80" cols="100"> {{doc}} </textarea>
+                </div>
             </div>
             <div class="4u 12u(mobile)">
                 <section>
@@ -21,7 +25,6 @@
                 </section>
                 <section>
                     Charger une ressource (PDF, .txt, .xls, ..):
-
                     {{> uploadRessource}}
                 </section>
             </div>
