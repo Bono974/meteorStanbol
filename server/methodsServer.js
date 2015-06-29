@@ -28,7 +28,7 @@ Meteor.methods({
         // NO NEED : Client
     }, deleteOnto: function(onto) {
         this.unblock();
-        return HTTP.call("DELETE", stanbolURL+"/ontonet/"+onto)
+        return HTTP.call("DELETE", marmottaURL+"/context/?graph="+onto)
     }, getMetaRessource: function(ressourceID) {
         this.unblock();
     }, getListRessources: function() {

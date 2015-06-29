@@ -21,8 +21,7 @@ Template.metadata.helpers({
         for(var x in parsed)
             arr.push( "--" + x + " : " + parsed[x]);
         return arr;
-    },
-    "ontoSelect": function() {
+    }, "ontoSelect": function() {
         return Session.get('ontoSelected');
     }
 });
@@ -49,17 +48,16 @@ Template.repositoryOnto.events({
             Session.set('META', results.content);
             return results.content;
         });
-    },
-    "click button[value=delete]": function(event, t){
+    }, "click button[value=delete]": function(event, t){
         event.preventDefault();
         var onto = t.$("form.getMetaOntoForm select[name=ontology]").val();
         if (confirm("Êtes vous sûr de vouloir supprimer l'ontologie " + onto + " du dépôt ?")) {
-            Meteor.call('deleteOnto', onto);
-            console.log("Ontology :"+ onto + " deleted from the repository");
-            refreshListOnto();
+            Meteor.call('deleteOnto', onto, function(errors, results) {
+                console.log("Ontology :"+ onto + " deleted from the repository");
+                refreshListOnto();
+            });
         }
-     },
-    "click button[value=addOntology]": function(event, t) {
+    }, "click button[value=addOntology]": function(event, t) {
         event.preventDefault();
         var onto = t.$('form.addOntology input[name=ontology]')[0].files[0];
         var format = t.$("form.addOntology select[name=format]").val();
@@ -67,6 +65,9 @@ Template.repositoryOnto.events({
 
         if (context === "") {
             alert("Choississez un nom pour le graphe RDF à importer!");
+            return;
+        } else if (typeof onto === "undefined") {
+            alert("Pas de fichier sélectionné !");
             return;
         }
 
@@ -82,16 +83,16 @@ Template.repositoryOnto.events({
             data: onto,
             contentType: format,
             success: function(res) {
-
-                console.log(res);
+                //console.log(res);
                 console.log("Ontology : "+ onto.name + " added from the repository");
                 refreshListOnto();
             },
             error: function(xhr){
                 console.log(xhr);
+                alert("Erreur dans l'ajout de l'ontologie "+onto.name+" avec le format "+ format + " essayez avec un autre format");
             },
             processData: false  // tell jQuery not to process the data
-            //contentType: false   // tell jQuery not to set contentType
+                //contentType: false   // tell jQuery not to set contentType
         });
     }
 });
@@ -115,9 +116,9 @@ function render() {
     graphics.node(function(node) {
         var url = 'https://secure.gravatar.com/avatar/' + node.data;
         return Viva.Graph.svg('image')
-        .attr('width', 24)
-        .attr('height', 24)
-        .link(url);
+            .attr('width', 24)
+            .attr('height', 24)
+            .link(url);
     });
     var renderer = Viva.Graph.View.renderer(graph,
             {
