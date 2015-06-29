@@ -1,6 +1,10 @@
 var stanbolURL = "http://localhost:8081";
 var couchDBURL = "http://localhost:5984";
 
+var Ressources = new FS.Collection("ressources", {
+  stores: [new FS.Store.FileSystem("ressources")]
+});
+
 Meteor.startup(function () {
     Meteor.call('getListRessources', function(error, results) {
         refreshListRessources(results);
@@ -113,22 +117,34 @@ Template.uploadRessource.events({
         } else {
             // TODO : couchdb view ?
             // check if ressource already been uploaded with another or same chain
-            var reader = new FileReader();
-            reader.onload = function(fileLoadEvent) {
-                var name = ressource.name.toString();
-                var buffer = new Uint8Array(reader.result)
-                    Meteor.call('fileUpload', name, buffer);
-            };
-            reader.readAsArrayBuffer(ressource);
-            processFileToCouchDB(filename, author, ressource);
+            //processFileToCouchDB(filename, author, ressource);
+            uploadFile(ressource);
         }
     }
 });
+
+function uploadFile(ressource) {
+    Ressources.insert(ressource, function (err, fileObj) {
+        // Inserted new doc with ID fileObj._id, and kicked off the data upload using HTTP
+        console.log(err);
+        console.log(fileObj);
+      });
+
+    //var reader = new FileReader();
+    //reader.onload = function(fileLoadEvent) {
+    //    var name = ressource.name.toString();
+    //    var buffer = new Uint8Array(reader.result)
+    //        Meteor.call('fileUpload', name, buffer);
+    //};
+    //reader.readAsArrayBuffer(ressource);
+}
 
 function processFileToCouchDB(filename, author, ressourceToAnnotate){
     Meteor.call("checkRessource", filename, function(errors, results) {
         if (results.checked == true) {
             if (confirm("Souhaitez vous écraser les annotations existantes (versionnées TODO) et le document attaché ?")) {
+                uploadFile(ressourceToAnnotate);
+
                 var settings = {
                     type: "update",
                     id: results.id,
@@ -139,6 +155,8 @@ function processFileToCouchDB(filename, author, ressourceToAnnotate){
                 enhanceRessource(ressourceToAnnotate, settings);
             } else return; // do nothing, let user change his entries
         } else {
+            uploadFile(ressourceToAnnotate);
+
             var settings = {
                 type: "new",
                 id: results.id,

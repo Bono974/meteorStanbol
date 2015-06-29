@@ -24,3 +24,5 @@ meteorhacks:npm
 npm-container
 d3js:d3
 peter:cradle
+cfs:standard-packages
+cfs:filesystem

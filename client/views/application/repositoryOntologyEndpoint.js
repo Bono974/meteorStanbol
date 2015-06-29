@@ -1,14 +1,13 @@
 var stanbolURL = "http://localhost:8081";
 
-Meteor.call('getListOnto', function(error, results) {
-    Session.set('listOnto', results.content);
-    return results.content;
+Meteor.startup(function () {
+    refreshListOnto();
 });
 
 Template.repositoryOnto.helpers({
     "listOntos": function() {
         var str = Session.get('listOnto');
-        return str.split(',');
+        return str;
     }
 });
 
@@ -29,8 +28,13 @@ Template.metadata.helpers({
 
 function refreshListOnto() {
     Meteor.call('getListOnto', function(error, results) {
-        Session.set('listOnto', results.content);
-        return results.content;
+        var ontologies = [];
+        var tmp = JSON.parse(results.content);
+        for (var cur in tmp) {
+            ontologies.push(tmp[cur].uri);
+        }
+        Session.set('listOnto', ontologies);
+        return ontologies;
     });
 }
 

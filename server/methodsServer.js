@@ -1,20 +1,28 @@
 var stanbolURL = "http://localhost:8081";
+var marmottaURL = "http://localhost:8080/marmotta";
 var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
 var dbRessource = "ressources";
 var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database(dbRessource);
 
 var tempDirectoryToAnnotate = '../../../../../.uploads/toAnnotate/';
 
+var ressourceStore = new FS.Store.FileSystem("ressources", {
+  path: tempDirectoryToAnnotate
+});
+
 Meteor.methods({
     getListOnto: function() {
         this.unblock();
-        return HTTP.call("GET", stanbolURL+"/servomap/getOntos");
+        return HTTP.call("GET", marmottaURL+"/context/list?labels");
     }, align2ontos: function(ont1, ont2, binary) {
         this.unblock();
-        return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+ont1+"&ontology="+ont2+"&binary="+binary);
+        var onto1 = marmottaURL+"/export/download?context="+ont1+"&format=application%2Frdf%2Bxml";
+        var onto2 = marmottaURL+"/export/download?context="+ont2+"&format=application%2Frdf%2Bxml";
+        return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+onto1+"&ontology="+onto2+"&binary="+binary);
     }, getMetaOnto: function(onto) {
         this.unblock();
-        return HTTP.call("GET", stanbolURL+"/servomap/meta/?ontology="+onto);
+        var marmottaExportOntology = marmottaURL+"/export/download?context="+onto+"&format=application%2Frdf%2Bxml";
+        return HTTP.call("GET", stanbolURL+"/servomap/meta/?ontology="+marmottaExportOntology);
     }, addOntology: function(onto, format) {
         this.unblock();
         // NO NEED : Client
