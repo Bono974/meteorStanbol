@@ -1,4 +1,5 @@
 var stanbolURL = "http://localhost:8081";
+var marmottaURL = "http://localhost:8080/marmotta";
 
 Meteor.startup(function () {
     refreshListOnto();
@@ -60,26 +61,38 @@ Template.repositoryOnto.events({
      },
     "click button[value=addOntology]": function(event, t) {
         event.preventDefault();
-        var onto = $('input[name=ontology]')[0].files[0];
+        var onto = t.$('form.addOntology input[name=ontology]')[0].files[0];
         var format = t.$("form.addOntology select[name=format]").val();
+        var context = t.$("form.addOntology input[name=context]").val();
 
-        //var stanbolURL = "http://localhost:8081";
-        var url = stanbolURL+"/ontonet/";
+        if (context === "") {
+            alert("Choississez un nom pour le graphe RDF à importer!");
+            return;
+        }
+
+        var url = marmottaURL + "/import/upload?context=" + context;
+
         var form = new FormData({
             version: "1.0.0-rc1"
         });
 
-        form.append("format", format);
-        form.append("file", onto);
         $.ajax({
             url: url,
             type: "POST",
-            data: form,
-            processData: false,  // tell jQuery not to process the data
-            contentType: false   // tell jQuery not to set contentType
+            data: onto,
+            contentType: format,
+            success: function(res) {
+
+                console.log(res);
+                console.log("Ontology : "+ onto.name + " added from the repository");
+                refreshListOnto();
+            },
+            error: function(xhr){
+                console.log(xhr);
+            },
+            processData: false  // tell jQuery not to process the data
+            //contentType: false   // tell jQuery not to set contentType
         });
-        console.log("Ontology : "+ onto.name + " added from the repository");
-        refreshListOnto();
     }
 });
 

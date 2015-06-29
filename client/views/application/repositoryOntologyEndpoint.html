@@ -24,13 +24,28 @@
 
                         Format :
                         <select name="format">
-                            <option value="auto"> auto</option>
-                            <option value="application/rdf+xml"> rdf/xml</option>
-                            <option value="application/rdf+json"> rdf/json</option>
-                            <option value="text/turtle"> turtle</option>
-                            <option value="text/rdf+n3"> N3</option>
-                            <option value="text/plain"> N-Triples</option>
-                        </select> <br/>
+                            <option>text/turtle</option>
+                            <option>application/x-geoatom+xml</option>
+                            <option>text/calendar</option>
+                            <option>application/html</option>
+                            <option>application/rdf+json</option>
+                            <option>application/ld+json</option>
+                            <option>application/xhtml+xml</option>
+                            <option>application/x-turtle</option>
+                            <option>text/n3</option>
+                            <option>application/xml</option>
+                            <option>text/rdf+n3</option>
+                            <option>application/trix</option>
+                            <option>text/vcard</option>
+                            <option>application/x-trig</option>
+                            <option>application/atom+xml</option>
+                            <option>application/rss+xml</option>
+                            <option>text/plain</option>
+                            <option>application/rdf+xml</option>
+                            <option>text/html</option>
+                            <option>application/x-georss+xml</option>
+                        </select><br/>
+                        Context / nom du graphe : <input type="text" name="context">
                         {{> uploadOntology}}
                     </form>
                 </section>
