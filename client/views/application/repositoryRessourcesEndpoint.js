@@ -117,26 +117,25 @@ Template.uploadRessource.events({
         } else {
             // TODO : couchdb view ?
             // check if ressource already been uploaded with another or same chain
-            //processFileToCouchDB(filename, author, ressource);
+            processFileToCouchDB(filename, author, ressource);
             uploadFile(ressource);
         }
     }
 });
 
 function uploadFile(ressource) {
-    Ressources.insert(ressource, function (err, fileObj) {
-        // Inserted new doc with ID fileObj._id, and kicked off the data upload using HTTP
-        console.log(err);
-        console.log(fileObj);
-      });
+    //Ressources.insert(ressource, function (err, fileObj) {
+    //    // Inserted new doc with ID fileObj._id, and kicked off the data upload using HTTP
+    //    console.log(err);
+    //    console.log(fileObj);
+    //  });
 
-    //var reader = new FileReader();
-    //reader.onload = function(fileLoadEvent) {
-    //    var name = ressource.name.toString();
-    //    var buffer = new Uint8Array(reader.result)
-    //        Meteor.call('fileUpload', name, buffer);
-    //};
-    //reader.readAsArrayBuffer(ressource);
+    var reader = new FileReader();
+    reader.onload = function(fileLoadEvent) {
+        var name = ressource.name.toString();
+        Meteor.call('fileUpload', name, reader.result);
+    };
+    reader.readAsBinaryString(ressource);
 }
 
 function processFileToCouchDB(filename, author, ressourceToAnnotate){

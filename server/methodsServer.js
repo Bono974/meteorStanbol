@@ -2,6 +2,10 @@ var stanbolURL = "http://localhost:8081";
 var marmottaURL = "http://localhost:8080/marmotta";
 var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
 var dbRessource = "ressources";
+
+var referenceMeteorStanbol = "D:/users/bt1/referenceMeteorStanbol"; //Windows at work
+//var referenceMeteorStanbol = "/Users/bruno/referenceMeteorStanbol"; // OSX at home
+
 var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database(dbRessource);
 
 var tempDirectoryToAnnotate = '../../../../../.uploads/toAnnotate/';
@@ -10,10 +14,76 @@ var ressourceStore = new FS.Store.FileSystem("ressources", {
   path: tempDirectoryToAnnotate
 });
 
+function normaliseURItoFolderName(ont) {
+    var res = ont.replace(/:/g, '');
+    res = res.replace(/\//g, '~');
+
+    return res;
+}
+
+function createFolderReference(folderName) {
+    mkdirp(folderName, function (err) {
+        if (err) console.error(err)
+        //else console.log('pow!')
+    });
+}
+
+function uploadFileRef(filePath, fileData) { // ServOMap requirements
+    fs.writeFile(filePath+".rdf", new Buffer(fileData));
+    fs.open(filePath+".txt", 'w', function (err, fd) {
+        fs.close(fd);
+    });
+}
+
 Meteor.methods({
     getListOnto: function() {
         this.unblock();
         return HTTP.call("GET", marmottaURL+"/context/list?labels");
+    }, referenceFileFolder: function(ont1, ont2, referenceFileBuffer) {
+        var uriFolder1 = normaliseURItoFolderName(ont1);
+        var uriFolder2 = normaliseURItoFolderName(ont2);
+
+        var folderTest1 = referenceMeteorStanbol + "/" + uriFolder1 + "_" + uriFolder2;
+        var folderTest2 = referenceMeteorStanbol + "/" + uriFolder2 + "_" + uriFolder1;
+
+        var res = {};
+
+        // reference without extension : let uploadFileRef do it
+        fs.stat(folderTest1+"/reference.rdf", function(err, stat) {
+            if(err == null) {
+                res = {
+                    folder : folderTest1,
+                    existed : true
+                };
+                uploadFileRef(res.folder+"/reference", referenceFileBuffer);
+                return res;
+            } else if(err.code == 'ENOENT') {
+                fs.stat(folderTest2+"/reference.rdf", function(err, stat) {
+                    if (err == null) {
+                        res = {
+                            folder : folderTest2,
+                            existed : true
+                        };
+                        uploadFileRef(res.folder+"/reference", referenceFileBuffer);
+                        return res;
+                    } else if (err.code == 'ENOENT') {
+                        res = {
+                            folder : folderTest1,
+                            existed : false
+                        };
+                        createFolderReference(folderTest1);
+                        uploadFileRef(res.folder+"/reference", referenceFileBuffer);
+                        return res;
+                    } else {
+                        console.log('Some other error: ', err.code);
+                    }
+                });
+
+            } else {
+                console.log('Some other error: ', err.code);
+            }
+        });
+        // FIXME : find a way to send signal to Client (reference already exist)
     }, align2ontos: function(ont1, ont2, binary) {
         this.unblock();
         var onto1 = marmottaURL+"/export/download?context="+ont1+"&format=application%2Frdf%2Bxml";
