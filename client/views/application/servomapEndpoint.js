@@ -30,14 +30,23 @@ Template.servomap.events({
         if (typeof referenceFile != "undefined") {
             var reader = new FileReader();
             reader.onload = function(fileLoadEvent) {
-                Meteor.call('referenceFileFolder', ont1, ont2, reader.result,
+                var settings = {
+                    referenceFileBuffer: reader.result
+                };
+                Meteor.call('referenceFileFolder', ont1, ont2, settings,
                         function(err, results) {
                             align(ont1, ont2, binary);
                         });
             };
             reader.readAsBinaryString(referenceFile);
         } else {
-            align(ont1, ont2, binary);
+            var settings = {
+                //referenceFileBuffer: null
+            };
+            Meteor.call('referenceFileFolder', ont1, ont2, settings,
+                        function(err, results) {
+                            align(ont1, ont2, binary);
+                        });
         }
     }
 });
@@ -45,8 +54,7 @@ Template.servomap.events({
 Template.servomap.helpers({
     "ontoSelectedDUM": function(){
         return Session.get('ontoSelected');
-    },
-    "listOntos": function() {
+    }, "listOntos": function() {
         var str = Session.get('listOnto');
         console.log(str);
         return str;

@@ -28,18 +28,25 @@ function createFolderReference(folderName) {
     });
 }
 
-function uploadFileRef(filePath, fileData) { // ServOMap requirements
-    fs.writeFile(filePath+".rdf", new Buffer(fileData));
+function createFilesFolderReference(filePath, defined) { // ServOMap requirements (with no reference file)
     fs.open(filePath+".txt", 'w', function (err, fd) {
         fs.close(fd);
+        if (!defined)
+            fs.open(filePath+".rdf", 'w', function (err, fd) {
+                fs.close(fd);
+            });
     });
+}
+
+function uploadFileRef(filePath, fileData) { // ServOMap requirements (with reference file)
+    fs.writeFile(filePath+".rdf", new Buffer(fileData));
 }
 
 Meteor.methods({
     getListOnto: function() {
         this.unblock();
         return HTTP.call("GET", marmottaURL+"/context/list?labels");
-    }, referenceFileFolder: function(ont1, ont2, referenceFileBuffer) {
+    }, referenceFileFolder: function(ont1, ont2, settings) {
         var uriFolder1 = normaliseURItoFolderName(ont1);
         var uriFolder2 = normaliseURItoFolderName(ont2);
 
@@ -55,7 +62,8 @@ Meteor.methods({
                     folder : folderTest1,
                     existed : true
                 };
-                uploadFileRef(res.folder+"/reference", referenceFileBuffer);
+                //if (typeof settings.referenceFileBuffer != "undefined")
+                    uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
                 return res;
             } else if(err.code == 'ENOENT') {
                 fs.stat(folderTest2+"/reference.rdf", function(err, stat) {
@@ -64,7 +72,8 @@ Meteor.methods({
                             folder : folderTest2,
                             existed : true
                         };
-                        uploadFileRef(res.folder+"/reference", referenceFileBuffer);
+                        if (typeof settings.referenceFileBuffer != "undefined")
+                            uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
                         return res;
                     } else if (err.code == 'ENOENT') {
                         res = {
@@ -72,13 +81,17 @@ Meteor.methods({
                             existed : false
                         };
                         createFolderReference(folderTest1);
-                        uploadFileRef(res.folder+"/reference", referenceFileBuffer);
+
+                        if (typeof settings.referenceFileBuffer != "undefined") {
+                            createFilesFolderReference(folderTest1+"/reference", true);
+                            uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
+                        } else
+                            createFilesFolderReference(folderTest1+"/reference", false);
                         return res;
                     } else {
                         console.log('Some other error: ', err.code);
                     }
                 });
-
             } else {
                 console.log('Some other error: ', err.code);
             }
