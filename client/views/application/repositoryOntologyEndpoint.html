@@ -77,7 +77,14 @@ Métadonnées de l'ontologie : <b> {{ontoSelect}} </b> <br/>
 </template>
 
 <template name="visualisation">
-    Test visualisation <br/><br/>
+    Visualisation <br/><br/>
+    <form action="" name="renderTriple" class="renderTriple">
+        <input type="text" placeholder="subject" name="subject">
+        <input type="text" placeholder="predicate" name="predicate">
+        <input type="text" placeholder="object" name="object">
+        <button value="renderQuery"> OK </button>
+    </form>
+
     <div id="VISU">
     </div>
 </template>

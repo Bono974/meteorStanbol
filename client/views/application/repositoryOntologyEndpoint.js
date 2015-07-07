@@ -101,6 +101,28 @@ Template.visualisation.rendered = function() {
     render();
 };
 
+Template.visualisation.events({
+    "click button[value=renderQuery]": function(event, t) {
+        event.preventDefault();
+        var subject = t.$('input[name=subject]')[0].value;
+        var predicate = t.$('input[name=predicate]')[0].value;
+        var object = t.$('input[name=object]')[0].value;
+
+        if (subject === "")
+            subject = null;
+        if (predicate === "")
+            predicate = null;
+        if (object === "")
+            object = null;
+
+
+        Meteor.call('callAsyncQueryHDTFile', subject, predicate, object, function(err, results) {
+            console.log(results);
+
+        });
+    }
+});
+
 function render() {
     var graph = Viva.Graph.graph();
     graph.addNode('bruno', '4b2188722d3b8197d775f6b665f5f253');

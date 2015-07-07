@@ -3,8 +3,9 @@ var marmottaURL = "http://localhost:8080/marmotta";
 var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
 var dbRessource = "ressources";
 
-var referenceMeteorStanbol = "D:/users/bt1/referenceMeteorStanbol"; //Windows at work
-//var referenceMeteorStanbol = "/Users/bruno/referenceMeteorStanbol"; // OSX at home
+
+//var referenceMeteorStanbol = "D:/users/bt1/referenceMeteorStanbol"; //Windows at work
+var referenceMeteorStanbol = "/Users/bruno/referenceMeteorStanbol"; // OSX at home
 
 var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database(dbRessource);
 
@@ -13,6 +14,11 @@ var tempDirectoryToAnnotate = '../../../../../.uploads/toAnnotate/';
 var ressourceStore = new FS.Store.FileSystem("ressources", {
   path: tempDirectoryToAnnotate
 });
+
+
+//var hdtFilePath = "D:/users/bt1/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //Windows at work
+var hdtFilePath = "/Users/bruno/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //OSX at home
+
 
 function normaliseURItoFolderName(ont) {
     var res = ont.replace(/:/g, '');
@@ -281,8 +287,38 @@ Meteor.methods({
                 id,
                 extendedRessource,
                 function(errors, results) { });
+    }, callAsyncQueryHDTFile: function (subject, predicate, object) {
+        this.unblock();
+        var hdt = Meteor.npmRequire('hdt');
+        console.log(hdt);
+
+        var res = Async.runSync(
+                function(done) {
+                    hdt.fromFile(hdtFilePath, function(error, hdtDocument) {
+                        hdtDocument.searchTriples(subject, predicate, object, {offset:0, limit:100},
+                            function(error, triples, totalCount){
+                                console.log(triples);
+                                //triples.forEach(function(triple) {
+                                //    console.log(triple);
+                                //});
+                                hdtDocument.close();
+                                //return triples;
+                                done(null, triples);
+                            });
+                    })
+                });
+
+        return res.result;;
+
+        //return "toto, toto, toto";
     }
 });
+
+function async(cb){
+    Meteor.setTimeout(function () {
+      cb(null, 'hello');
+    }, 3000);
+  }
 
 //FIXME : may be not useful from now
 Meteor.startup(function () {
