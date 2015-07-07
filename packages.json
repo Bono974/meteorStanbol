@@ -1,3 +1,5 @@
 {
-    "form-data" : "1.0.0-rc1"
+    "form-data" : "1.0.0-rc1",
+    "requirejs" : "2.1.18",
+    "sparql-client" : "0.2.0",
 }
