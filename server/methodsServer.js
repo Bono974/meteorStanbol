@@ -307,18 +307,9 @@ Meteor.methods({
                             });
                     })
                 });
-
         return res.result;;
-
-        //return "toto, toto, toto";
     }
 });
-
-function async(cb){
-    Meteor.setTimeout(function () {
-      cb(null, 'hello');
-    }, 3000);
-  }
 
 //FIXME : may be not useful from now
 Meteor.startup(function () {

@@ -1,0 +1,31 @@
+<template name="visualisation">
+
+<style type='text/css'>
+  body, #graph-container {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    overflow: hidden;
+    margin: 0px;
+  }
+  #loadNew {
+    margin: 50px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 99999;
+  }
+  </style>
+    Visualisation <br/><br/>
+    <form action="" name="renderTriple" class="renderTriple">
+        <input type="text" placeholder="subject" name="subject">
+        <input type="text" placeholder="predicate" name="predicate">
+        <input type="text" placeholder="object" name="object">
+        <button value="renderQuery"> OK </button>
+    </form>
+    {{> reactiveTable settings=settingsTable}}
+
+  <div id="graph-container"></div>
+  <div class="graph-overlay"></div>
+  <button id="loadNew">Load new graph</button>
+</template>

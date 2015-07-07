@@ -1,5 +1,4 @@
 <template name="repositoryOnto">
-
 <div id=main>
     <div class="container">
         <div class="row main-row">
@@ -51,9 +50,6 @@
                 </section>
             </div>
 
-        <div>
-            {{> visualisation}}
-        </div>
         </div>
     </div>
 </div>
@@ -74,17 +70,4 @@ Métadonnées de l'ontologie : <b> {{ontoSelect}} </b> <br/>
 <!--{{> upload_bootstrap }}-->
     <input type=file name="ontology"/>
     <button type="submit" value="addOntology"> Ajouter </button>
-</template>
-
-<template name="visualisation">
-    Visualisation <br/><br/>
-    <form action="" name="renderTriple" class="renderTriple">
-        <input type="text" placeholder="subject" name="subject">
-        <input type="text" placeholder="predicate" name="predicate">
-        <input type="text" placeholder="object" name="object">
-        <button value="renderQuery"> OK </button>
-    </form>
-
-    <div id="VISU">
-    </div>
 </template>

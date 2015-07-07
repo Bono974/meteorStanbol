@@ -27,3 +27,4 @@ peter:cradle
 cfs:standard-packages
 cfs:filesystem
 netanelgilad:mkdirp
+aslagle:reactive-table
