@@ -17,7 +17,7 @@
                             {{/each}}
                             </select>
                             <input type="checkbox" name="binary" class="binary"> Indexation binaire <br/> <br/>
-                            Fichier de référence [Optionnel]   <input type=file name="referenceFile"> <button type=submit value="referenceFileLoad"> Charger !</button> <br/>
+                            Fichier de référence [Optionnel]   <input type=file name="referenceFile"> <br/>
                             <button type=submit value="align"> Aligner via ServOMap</button>
                         </form>
                     </section>
@@ -25,8 +25,7 @@
 		        <div class="4u 12u(mobile)">
                     {{> metadata}}
                     <section>
-                        Fichier d'alignement à insérer (XML, RDF, ..): <br/>
-                        //TODO : Solr + reentrant <br/>
+                        Fichier d'alignement/reference à insérer directement dans le repository (XML, RDF, ..): <br/>
                         <input type=file> <button type=submit> Charger </button>
                     </section>
                 </div>
@@ -34,7 +33,7 @@
         </div>
         <div class="container">
             <br/>
-            {{>alignmentResult}}
+            <!-- {{>alignmentResult}} -->
         </div>
     </div>
 </template>
@@ -45,8 +44,6 @@
             <b> Résultat de l'alignement </b>
         </p>
 
-    // TODO : get / set generic files (reference.txt, plus19/moins19 ...) <br/>
-    // jsonld ? <br/>
         <iframe src={{resultMappingFile}}></iframe><button> Télécharger </button>
     </div>
 </template>

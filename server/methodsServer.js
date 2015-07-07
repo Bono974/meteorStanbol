@@ -62,7 +62,7 @@ Meteor.methods({
                     folder : folderTest1,
                     existed : true
                 };
-                //if (typeof settings.referenceFileBuffer != "undefined")
+                if (typeof settings.referenceFileBuffer != "undefined")
                     uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
                 return res;
             } else if(err.code == 'ENOENT') {
@@ -102,8 +102,32 @@ Meteor.methods({
         var onto1 = marmottaURL+"/export/download?context="+ont1+"&format=application%2Frdf%2Bxml";
         var onto2 = marmottaURL+"/export/download?context="+ont2+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+onto1+"&ontology="+onto2+"&binary="+binary);
+    }, querySelect: function(queryS){
+        var endpoint = marmottaURL+'/sparql/select';
+        Meteor.call('query', endpoint, queryS);
+    }, queryUpdate: function(queryU) {
+        var endpoint = marmottaURL+'/sparql/update';
+        Meteor.call('query', endpoint, queryU);
+    }, query: function(endpoint, query) {
+        //var query = "SELECT * FROM <http://human.owl> WHERE {?s rdfs:subClassOf ?o} LIMIT 10";
+        var sparql = Meteor.npmRequire('sparql-client');
+        var util = Meteor.npmRequire('util');
+
+        var client = new sparql(endpoint);
+        client.query(query).execute(function(error, results) {
+            process.stdout.write(util.inspect(arguments, null, 20, true)+"\n");1
+        });
     }, getMetaOnto: function(onto) {
         this.unblock();
+
+        var query = "INSERT DATA  " +
+                    "{"+
+                    "    GRAPH <http://tomio.dim-ub2.local:8080/marmotta/context/alignementsTests>" +
+                    "    {"+
+                    "        <http://example.org/subject> <http://example.org/predicate> <http://example.org/object>"+
+                    "    }"+
+                    "}";
+
         var marmottaExportOntology = marmottaURL+"/export/download?context="+onto+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/meta/?ontology="+marmottaExportOntology);
     }, addOntology: function(onto, format) {
