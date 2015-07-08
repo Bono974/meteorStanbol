@@ -8,11 +8,18 @@
     overflow: hidden;
     margin: 0px;
   }
-  #loadNew {
+  #loadRandom {
     margin: 50px;
     position: fixed;
     left: 0;
     top: 0;
+    z-index: 99999;
+  }
+  #toggleRender {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 4%;
     z-index: 99999;
   }
   </style>
@@ -21,11 +28,13 @@
         <input type="text" placeholder="subject" name="subject">
         <input type="text" placeholder="predicate" name="predicate">
         <input type="text" placeholder="object" name="object">
+        <input type="text" placeholder="LIMIT" name="limit">
         <button value="renderQuery"> OK </button>
     </form>
     {{> reactiveTable settings=settingsTable}}
 
   <div id="graph-container"></div>
   <div class="graph-overlay"></div>
-  <button id="loadNew">Load new graph</button>
+  <button id="toggleRender" value="pause">Pause render</button>
+  <button id="loadRandom">Load random graph</button>
 </template>

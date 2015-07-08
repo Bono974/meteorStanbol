@@ -287,7 +287,7 @@ Meteor.methods({
                 id,
                 extendedRessource,
                 function(errors, results) { });
-    }, callAsyncQueryHDTFile: function (subject, predicate, object) {
+    }, callAsyncQueryHDTFile: function (subject, predicate, object, limit) {
         this.unblock();
         var hdt = Meteor.npmRequire('hdt');
         console.log(hdt);
@@ -295,9 +295,9 @@ Meteor.methods({
         var res = Async.runSync(
                 function(done) {
                     hdt.fromFile(hdtFilePath, function(error, hdtDocument) {
-                        hdtDocument.searchTriples(subject, predicate, object, {offset:0, limit:100},
+                        hdtDocument.searchTriples(subject, predicate, object, {offset:0, limit:limit},
                             function(error, triples, totalCount){
-                                console.log(triples);
+                                //console.log(triples);
                                 //triples.forEach(function(triple) {
                                 //    console.log(triple);
                                 //});

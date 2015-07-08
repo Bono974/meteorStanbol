@@ -23,25 +23,49 @@ Template.visualisation.events({
         var subject = t.$('input[name=subject]')[0].value;
         var predicate = t.$('input[name=predicate]')[0].value;
         var object = t.$('input[name=object]')[0].value;
+        var limit = parseInt(t.$('input[name=limit]')[0].value);
+        console.log(limit);
+        if (isNaN(limit))
+            limit = 100; // default value
 
-        Meteor.call('callAsyncQueryHDTFile', subject, predicate, object, function(err, results) {
+        Meteor.call('callAsyncQueryHDTFile', subject, predicate, object, limit, function(err, results) {
             var settings = {
                 dataset: results
             };
             loadNew(settings);
             storeResults(settings);
         });
-    }, "click button[id=loadNew]":function() {
-        console.log('loadNew', App);
-        loadNew();
+    }, "click button[id=loadRandom]":function() {
+        console.log('loadRandom', App);
+        loadRandom();
+    }, "click button[id=toggleRender]":function() {
+
+        console.log($('#toggleRender'));
+        if ($('#toggleRender')[0].value == "pause") {
+            $('#toggleRender')[0].value = 'resume';
+            $('#toggleRender')[0].innerHTML = 'Resume render';
+            pauseRender();
+        }
+        else if ($('#toggleRender')[0].value == "resume") {
+            $('#toggleRender')[0].value = 'pause';
+            $('#toggleRender')[0].innerHTML = 'Pause render';
+            resumeRender();
+        }
     }
 });
 
+
+function pauseRender() {
+    App.renderer.pause();
+}
+function resumeRender() {
+    App.renderer.resume();
+}
 function storeResults(settings) {
     var dataset = settings.dataset;
     console.log(dataset);
 
-    //QueryResult.remove({});
+    QueryResult._collection.remove({});
     for (var cur in dataset)
         QueryResult._collection.insert({
             subject: dataset[cur].subject,
@@ -54,10 +78,10 @@ App = {};
 function newGraphFromHDTResultSet(dataset){
     var resG = Viva.Graph.graph();
     if (dataset.length > 0) {
-        resG.addNode('root', dataset[0].subject);
         for (var cur in dataset) {
-            resG.addNode(cur, dataset[cur].object);
-            resG.addLink('root', cur, dataset[cur].predicate);
+            resG.addNode(dataset[cur].object);
+            resG.addNode(dataset[cur].predicate);
+            resG.addLink(dataset[cur].subject, dataset[cur].object, dataset[cur].predicate);
         }
     }
     return resG
@@ -78,6 +102,12 @@ function onLoad() {
     App.renderer.run();
 }
 
+function loadRandom() {
+    App.graph.clear();
+    var newGraph = App.graphGenerator.grid(Math.random() * 20 |0 , Math.random() * 20 |0);
+    copyGraph(newGraph, App.graph);
+}
+
 function loadNew(settings) {
     App.graph.clear();
 
@@ -96,13 +126,13 @@ function copyGraph(from, to) {
 }
 
 
-//var events = Viva.Graph.webglInputEvents(webGLGraphics, graph);
-//events.mouseEnter(function (node) {
-//    console.log('Mouse entered node: ' + node.id);
-//}).mouseLeave(function (node) {
-//    console.log('Mouse left node: ' + node.id);
-//}).dblClick(function (node) {
-//    console.log('Double click on node: ' + node.id);
-//}).click(function (node) {
-//    console.log('Single click on node: ' + node.id);
-//});
+var events = Viva.Graph.webglInputEvents(App.graphics, App.graph);
+events.mouseEnter(function (node) {
+    console.log('Mouse entered node: ' + node.id);
+}).mouseLeave(function (node) {
+    console.log('Mouse left node: ' + node.id);
+}).dblClick(function (node) {
+    console.log('Double click on node: ' + node.id);
+}).click(function (node) {
+    console.log('Single click on node: ' + node.id);
+});
