@@ -28,12 +28,16 @@ Template.visualisation.events({
         if (isNaN(limit))
             limit = 100; // default value
 
+console.log("TOTO1");
         Meteor.call('callAsyncQueryHDTFile', subject, predicate, object, limit, function(err, results) {
+console.log("TOTO2");
             var settings = {
                 dataset: results
             };
+            //storeResults(settings);
+console.log("TOTO3");
             loadNew(settings);
-            storeResults(settings);
+console.log("TOTO4");
         });
     }, "click button[id=loadRandom]":function() {
         console.log('loadRandom', App);
@@ -63,7 +67,7 @@ function resumeRender() {
 }
 function storeResults(settings) {
     var dataset = settings.dataset;
-    console.log(dataset);
+    //console.log(dataset);
 
     QueryResult._collection.remove({});
     for (var cur in dataset)
