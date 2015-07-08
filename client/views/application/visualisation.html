@@ -1,40 +1,53 @@
 <template name="visualisation">
 
 <style type='text/css'>
-  body, #graph-container {
+body, #graph-container {
     height: 100%;
     width: 100%;
     position: absolute;
     overflow: hidden;
     margin: 0px;
-  }
-  #loadRandom {
+}
+.graph-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+.graph-selection-indicator {
+    position: absolute;
+    background: transparent;
+    border: 1px solid orange;
+}
+#loadRandom {
     margin: 50px;
     position: fixed;
     left: 0;
     top: 0;
     z-index: 99999;
-  }
-  #toggleRender {
+}
+#toggleRender {
     margin: 50px;
     position: fixed;
     left: 0 ;
     top: 4%;
     z-index: 99999;
-  }
-  </style>
-    Visualisation <br/><br/>
-    <form action="" name="renderTriple" class="renderTriple">
-        <input type="text" placeholder="subject" name="subject">
-        <input type="text" placeholder="predicate" name="predicate">
-        <input type="text" placeholder="object" name="object">
-        <input type="text" placeholder="LIMIT" name="limit">
-        <button value="renderQuery"> OK </button>
-    </form>
-    {{> reactiveTable settings=settingsTable}}
+}
+</style>
+Visualisation <br/><br/>
+<form action="" name="renderTriple" class="renderTriple">
+    <input type="text" placeholder="subject" name="subject">
+    <input type="text" placeholder="predicate" name="predicate">
+    <input type="text" placeholder="object" name="object">
+    <input type="text" placeholder="LIMIT" name="limit">
+    <button value="renderQuery"> OK </button>
+</form>
+{{> reactiveTable settings=settingsTable}}
 
-  <div id="graph-container"></div>
-  <div class="graph-overlay"></div>
-  <button id="toggleRender" value="pause">Pause render</button>
-  <button id="loadRandom">Load random graph</button>
+<div id="graph-container"></div>
+<div class="graph-overlay"></div>
+<button id="toggleRender" value="pause">Pause render</button>
+<button id="loadRandom">Load random graph</button>
 </template>

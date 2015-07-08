@@ -28,3 +28,4 @@ cfs:standard-packages
 cfs:filesystem
 netanelgilad:mkdirp
 aslagle:reactive-table
+mikowals:batch-insert

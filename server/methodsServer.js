@@ -318,3 +318,10 @@ Meteor.startup(function () {
         uploadDir:"../../../../../.uploads/"
     })
 });
+
+//QueryResult = new Mongo.Collection("resultHDT");
+//QueryResult.remove({});
+//QueryResult.allow({
+//    insert: function(){return true;}
+//});
+
