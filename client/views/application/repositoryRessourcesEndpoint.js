@@ -100,7 +100,17 @@ Template.repositoryRessource.events({
             Meteor.call('getListRessources', function(error, results) {
                 return refreshListRessources(results);
             });
-        };
+        }
+    } , "click button[value=addToMarmotta]": function(event, t) {
+        event.preventDefault();
+        var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
+        Session.set('ressourceSelected', ressource);
+        Meteor.call('addEnhancementsToRepo', ressource, function(errors, results){
+            if (errors)
+            console.log(errors);
+            else
+            console.log(results);
+        });
     }
 });
 

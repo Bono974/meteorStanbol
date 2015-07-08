@@ -48,6 +48,23 @@ function uploadFileRef(filePath, fileData) { // ServOMap requirements (with refe
     fs.writeFile(filePath+".rdf", new Buffer(fileData));
 }
 
+function findTripleFromDoc(subject, predicate, doc) {
+    var docObj = JSON.parse(doc);
+    var enhancement = docObj.enhancement;
+    var strGraph = "@graph";
+    //var strID = "@id";
+    var strEntityReference = "entity-reference";
+
+    var enhancementGraph = docObj.enhancement[strGraph];
+    var res = "";
+
+    for (var cur in enhancementGraph) {
+        res += subject + " " + predicate + " <" + enhancementGraph[cur][strEntityReference] + "> . ";
+    }
+
+    return res;
+}
+
 Meteor.methods({
     getListOnto: function() {
         this.unblock();
@@ -125,17 +142,30 @@ Meteor.methods({
         });
     }, getMetaOnto: function(onto) {
         this.unblock();
-
-        var query = "INSERT DATA  " +
-                    "{"+
-                    "    GRAPH <http://tomio.dim-ub2.local:8080/marmotta/context/alignementsTests>" +
-                    "    {"+
-                    "        <http://example.org/subject> <http://example.org/predicate> <http://example.org/object>"+
-                    "    }"+
-                    "}";
-
         var marmottaExportOntology = marmottaURL+"/export/download?context="+onto+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/meta/?ontology="+marmottaExportOntology);
+    }, addEnhancementsToRepo: function(filename) { //FIXME with Meteor npm package async
+
+        var query = Async.runSync(
+                function(done) {
+                    db.get(filename, function (err, doc) { //Doc here exist
+                        var graph = "http://tomio.dim-ub2.local:8080/marmotta/context/alignementsTests";
+                        var subject = "<" + graph + "#" + doc._id + doc._rev + ">"; // FIXME : temporary
+                        var predicate = "<" + graph + "#annotePar>";
+                        var triples = findTripleFromDoc(subject, predicate, doc);
+                        var query = "INSERT DATA  " +
+                        "{"+
+                        "    GRAPH <"+ graph +">" +
+                        "    {"+
+                        triples +
+                        "    }"+
+                        "}";
+                    //console.log(query);
+                    done(null, query);
+                    console.log(query);
+                    })
+                });
+        Meteor.call('queryUpdate', query.result);
     }, addOntology: function(onto, format) {
         this.unblock();
         // NO NEED : Client
@@ -155,7 +185,7 @@ Meteor.methods({
         console.log(filePath);
         fs.writeFile(filePath, new Buffer(fileData));
     }, getRessource: function(filename) {
-        var res; // FIXME init
+        var res; // FIXME init with MEteor npm package async
         db.get(filename, function (err, doc) {
             if (typeof doc != "undefined") {
                 bool = true;
@@ -307,7 +337,7 @@ Meteor.methods({
                             });
                     })
                 });
-        return res.result;;
+        return res.result;
     }
 });
 

@@ -121,6 +121,26 @@ function onLoad() {
     var events = Viva.Graph.webglInputEvents(App.graphics, App.graph);
     events.mouseEnter(function (node) {
         console.log('Mouse entered node: ' + node.id);
+        console.log(node);
+
+        var subject = node.id;
+        var predicate = null;
+        var object = null;
+        var limit = 100; //FIXME
+
+
+
+        App.graph.forEachLinkedNode(node.id, function(linkedNode, link) {
+            console.log("Connected node: ", linkedNode.id, linkedNode.data);
+            console.log(link);
+        });
+
+
+
+        //Meteor.call("callAsyncQueryHDTFile", subject, predicate, object, limit, function (err, results) {
+        //    console.log("LOLOLOL");
+        //    console.log(results)
+        //});
     }).mouseLeave(function (node) {
         console.log('Mouse left node: ' + node.id);
     }).dblClick(function (node) {
