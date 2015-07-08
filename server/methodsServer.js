@@ -3,7 +3,6 @@ var marmottaURL = "http://localhost:8080/marmotta";
 var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
 var dbRessource = "ressources";
 
-
 //var referenceMeteorStanbol = "D:/users/bt1/referenceMeteorStanbol"; //Windows at work
 var referenceMeteorStanbol = "/Users/bruno/referenceMeteorStanbol"; // OSX at home
 
@@ -15,10 +14,8 @@ var ressourceStore = new FS.Store.FileSystem("ressources", {
   path: tempDirectoryToAnnotate
 });
 
-
 //var hdtFilePath = "D:/users/bt1/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //Windows at work
 var hdtFilePath = "/Users/bruno/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //OSX at home
-
 
 function normaliseURItoFolderName(ont) {
     var res = ont.replace(/:/g, '');
@@ -52,15 +49,23 @@ function findTripleFromDoc(subject, predicate, doc) {
     var docObj = JSON.parse(doc);
     var enhancement = docObj.enhancement;
     var strGraph = "@graph";
-    //var strID = "@id";
+    var strID = "@id";
+    var strEnhancerEntityReference = "enhancer:entity-reference";
     var strEntityReference = "entity-reference";
 
     var enhancementGraph = docObj.enhancement[strGraph];
     var res = "";
 
     for (var cur in enhancementGraph) {
-        res += subject + " " + predicate + " <" + enhancementGraph[cur][strEntityReference] + "> . ";
+        var tmp = enhancementGraph[cur][strEntityReference];
+        if (typeof(tmp) != "undefined")
+            res += subject + " " + predicate + " <" + enhancementGraph[cur][strEntityReference] + "> . ";
+        else
+            res += subject + " " + predicate + " <" + enhancementGraph[cur][strEnhancerEntityReference] + "> . ";
+
     }
+
+    console.log(res);
 
     return res;
 }
@@ -145,12 +150,11 @@ Meteor.methods({
         var marmottaExportOntology = marmottaURL+"/export/download?context="+onto+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/meta/?ontology="+marmottaExportOntology);
     }, addEnhancementsToRepo: function(filename) { //FIXME with Meteor npm package async
-
         var query = Async.runSync(
                 function(done) {
                     db.get(filename, function (err, doc) { //Doc here exist
                         var graph = "http://tomio.dim-ub2.local:8080/marmotta/context/alignementsTests";
-                        var subject = "<" + graph + "#" + doc._id + doc._rev + ">"; // FIXME : temporary
+                        var subject = "<" + graph + "#" + doc._id + doc._rev + ">"; // FIXME : temporary ?
                         var predicate = "<" + graph + "#annotePar>";
                         var triples = findTripleFromDoc(subject, predicate, doc);
                         var query = "INSERT DATA  " +
@@ -160,9 +164,8 @@ Meteor.methods({
                         triples +
                         "    }"+
                         "}";
-                    //console.log(query);
-                    done(null, query);
-                    console.log(query);
+
+                        done(null, query);
                     })
                 });
         Meteor.call('queryUpdate', query.result);
@@ -177,7 +180,6 @@ Meteor.methods({
     }, getListRessources: function() {
         this.unblock();
         var allDocs =  HTTP.call("GET", couchDBURL+":"+couchDBPORT+"/"+dbRessource+"/_all_docs");
-
         var res = JSON.parse(allDocs.content);
         return res;
     }, fileUpload:function (filename, fileData) {
@@ -303,7 +305,6 @@ Meteor.methods({
                                 settings.author,
                                 extendedRessource,
                                 function(errors, results) {
-                                    console.log("EOROJOOWJROJWEROJWOERJWE");
                                     console.log(errors);
                                     console.log(results);
                                 }); //FIXME : check if same ressource
@@ -320,7 +321,6 @@ Meteor.methods({
     }, callAsyncQueryHDTFile: function (subject, predicate, object, limit) {
         this.unblock();
         var hdt = Meteor.npmRequire('hdt');
-        console.log(hdt);
 
         var res = Async.runSync(
                 function(done) {
@@ -332,7 +332,6 @@ Meteor.methods({
                                 //    console.log(triple);
                                 //});
                                 hdtDocument.close();
-                                //return triples;
                                 done(null, triples);
                             });
                     })
