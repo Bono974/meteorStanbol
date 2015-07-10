@@ -24,23 +24,9 @@ Template.visualisation.events({
         //var predicate = t.$('input[name=predicate]')[0].value;
         //var object = t.$('input[name=object]')[0].value;
         //var limit = parseInt(t.$('input[name=limit]')[0].value);
-
-        var query = t.$('textarea[name=querySparql]')[0].value;
-
-
-        if (isNaN(limit))
-            limit = 100; // default value
-
-        var offset = 0;
-
-        Meteor.call('querySelectFuseki', query, function(errors, results) {
-            //console.log(results.results.bindings);
-            var settings = {
-                dataset: results.results.bindings
-            }
-            console.log(settings);
-            loadNew(settings);
-        });
+        //if (isNaN(limit))
+        //    limit = 100; // default value
+        //var offset = 0;
 
         //Meteor.call('callAsyncQueryHDTFile', subject, predicate, object, offset, limit, function(err, results) {
         //    var settings = {
@@ -49,12 +35,31 @@ Template.visualisation.events({
         //    //storeResults(settings);
         //    loadNew(settings);
         //});
-    }, "click button[id=loadRandom]":function() {
+
+        var query = t.$('textarea[name=querySparql]')[0].value;
+
+        var sparqlChooser1 = t.$('input[name=selectSPARQL]')[0].checked;
+        var sparqlChooser2 = t.$('input[name=selectSPARQL]')[1].checked;
+
+        if (sparqlChooser1) {
+            Meteor.call('querySelectMarmotta', query, function(errors, results) {
+            var settings = {
+                dataset: results.results.bindings
+            }
+            loadNew(settings);
+            });
+        } else if(sparqlChooser2) {
+            Meteor.call('querySelectFuseki', query, function(errors, results) {
+                var settings = {
+                    dataset: results.results.bindings
+                }
+                loadNew(settings);
+            });
+        }
+   }, "click button[id=loadRandom]":function() {
         console.log('loadRandom', App);
         loadRandom();
     }, "click button[id=toggleRender]":function() {
-
-        console.log($('#toggleRender'));
         if ($('#toggleRender')[0].value == "pause") {
             $('#toggleRender')[0].value = 'resume';
             $('#toggleRender')[0].innerHTML = 'Resume render';
@@ -67,7 +72,6 @@ Template.visualisation.events({
         }
     }
 });
-
 
 function pauseRender() {
     App.renderer.pause();
@@ -98,9 +102,10 @@ function newGraphFromHDTResultSet(dataset){
             //resG.addNode(dataset[cur].object);
             resG.addNode(dataset[cur].object.value);
             //resG.addNode(dataset[cur].predicate);
-            resG.addNode(dataset[cur].property.value);
+            //resG.addNode(dataset[cur].property.value);
             //resG.addLink(dataset[cur].subject, dataset[cur].object, dataset[cur].predicate);
-            resG.addLink(dataset[cur].subject.value, dataset[cur].object.value, dataset[cur].property.value);
+            //resG.addLink(dataset[cur].subject.value, dataset[cur].object.value, dataset[cur].property.value);
+            resG.addLink(dataset[cur].subject.value, dataset[cur].object.value);
         }
     }
     return resG
@@ -124,9 +129,9 @@ function onLoad() {
     App.layout = Viva.Graph.Layout.forceDirected(App.graph, {
         springLength : 30,
         springCoeff: 0.0008,
-        gravity : -1.2,
+        gravity : -8,
         theta : 0.8,
-        dragCoeff : 0.02,
+        dragCoeff : 0.09,
         timeStep : 15
     });
 
@@ -143,7 +148,7 @@ function onLoad() {
     });
 
     App.renderer = Viva.Graph.View.renderer(App.graph, {
-        //layout: App.layout, // FIXME
+        layout: App.layout, // FIXME
         graphics: App.graphics,
         container: document.getElementById('graph-container')
     });
@@ -177,7 +182,6 @@ function onLoad() {
         console.log('Double click on node: ' + node.id);
         console.log('Delete node: ' + node.id);
         App.graph.removeNode(node.id);
-        
     }).click(function (node) {
         console.log('Single click on node: ' + node.id);
     });

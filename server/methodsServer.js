@@ -131,7 +131,14 @@ Meteor.methods({
         return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+onto1+"&ontology="+onto2+"&binary="+binary);
     }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
-        Meteor.call('query', endpoint, queryS);
+        var res = Async.runSync(
+                function(done) {
+                    Meteor.call('query', endpoint, queryS, function(err, results) {
+                        //console.log(results);
+                        done(null, results);
+                    })
+                });
+        return res.result;
     }, queryUpdateMarmotta: function(queryU) {
         var endpoint = marmottaURL+'/sparql/update';
         Meteor.call('query', endpoint, queryU);
