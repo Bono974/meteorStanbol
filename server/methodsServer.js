@@ -1,5 +1,6 @@
 var stanbolURL = "http://localhost:8081";
 var marmottaURL = "http://localhost:8080/marmotta";
+var fusekiURL = "http://localhost:3030/testHDTFuseki/query";
 var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
 var dbRessource = "ressources";
 
@@ -15,7 +16,8 @@ var ressourceStore = new FS.Store.FileSystem("ressources", {
 });
 
 //var hdtFilePath = "D:/users/bt1/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //Windows at work
-var hdtFilePath = "/Users/bruno/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //OSX at home
+//var hdtFilePath = "/Users/bruno/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //OSX at home
+var hdtFilePath = "/Users/bruno/export.hdt"; //OSX at home
 
 function normaliseURItoFolderName(ont) {
     var res = ont.replace(/:/g, '');
@@ -62,10 +64,7 @@ function findTripleFromDoc(subject, predicate, doc) {
             res += subject + " " + predicate + " <" + enhancementGraph[cur][strEntityReference] + "> . ";
         else
             res += subject + " " + predicate + " <" + enhancementGraph[cur][strEnhancerEntityReference] + "> . ";
-
     }
-
-    console.log(res);
 
     return res;
 }
@@ -130,26 +129,41 @@ Meteor.methods({
         var onto1 = marmottaURL+"/export/download?context="+ont1+"&format=application%2Frdf%2Bxml";
         var onto2 = marmottaURL+"/export/download?context="+ont2+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+onto1+"&ontology="+onto2+"&binary="+binary);
-    }, querySelect: function(queryS){
+    }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
         Meteor.call('query', endpoint, queryS);
-    }, queryUpdate: function(queryU) {
+    }, queryUpdateMarmotta: function(queryU) {
         var endpoint = marmottaURL+'/sparql/update';
         Meteor.call('query', endpoint, queryU);
+    }, querySelectFuseki: function(queryS) {
+        var endpoint = fusekiURL;
+        var res = Async.runSync(
+                function(done) {
+                    Meteor.call('query', endpoint, queryS, function(err, results) {
+                        //console.log(results);
+                        done(null, results);
+                    })
+                });
+        return res.result;
     }, query: function(endpoint, query) {
         //var query = "SELECT * FROM <http://human.owl> WHERE {?s rdfs:subClassOf ?o} LIMIT 10";
         var sparql = Meteor.npmRequire('sparql-client');
         var util = Meteor.npmRequire('util');
 
         var client = new sparql(endpoint);
-        client.query(query).execute(function(error, results) {
-            process.stdout.write(util.inspect(arguments, null, 20, true)+"\n");1
-        });
+        var result = Async.runSync(
+                function(done) {
+                    client.query(query).execute(function(error, results) { //FIXME : When query is not valid --> error
+                        //process.stdout.write(util.inspect(arguments, null, 20, true)+"\n");1
+                        done(null, results);
+                    });
+                });
+        return result.result;
     }, getMetaOnto: function(onto) {
         this.unblock();
         var marmottaExportOntology = marmottaURL+"/export/download?context="+onto+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/meta/?ontology="+marmottaExportOntology);
-    }, addEnhancementsToRepo: function(filename) { //FIXME with Meteor npm package async
+    }, addEnhancementsToRepo: function(filename) {
         var query = Async.runSync(
                 function(done) {
                     db.get(filename, function (err, doc) { //Doc here exist
@@ -318,13 +332,14 @@ Meteor.methods({
                 id,
                 extendedRessource,
                 function(errors, results) { });
-    }, callAsyncQueryHDTFile: function (subject, predicate, object, limit) {
+    }, callAsyncQueryHDTFile: function (subject, predicate, object, offset, limit) {
         this.unblock();
         var hdt = Meteor.npmRequire('hdt');
 
         var res = Async.runSync(
                 function(done) {
                     hdt.fromFile(hdtFilePath, function(error, hdtDocument) {
+                        console.log(error);
                         hdtDocument.searchTriples(subject, predicate, object, {offset:0, limit:limit},
                             function(error, triples, totalCount){
                                 //console.log(triples);
@@ -333,6 +348,24 @@ Meteor.methods({
                                 //});
                                 hdtDocument.close();
                                 done(null, triples);
+                            });
+                    })
+                });
+        return res.result;
+    }, callAsyncQueryIndividualHDTFile: function (pattern, offset, limit) {
+        this.unblock();
+        var hdt = Meteor.npmRequire('hdt');
+
+        var res = Async.runSync(
+                function(done) {
+                    hdt.fromFile(hdtFilePath, function(error, hdtDocument) {
+                        console.log(error);
+                        hdtDocument.searchLiterals(pattern, {offset:offset, limit:limit},
+                            function(error, literals, totalCount){
+                                console.log(error);
+                                console.log(literals);
+                                hdtDocument.close();
+                                done(null, literals);
                             });
                     })
                 });

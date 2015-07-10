@@ -20,21 +20,35 @@ Template.visualisation.helpers({
 Template.visualisation.events({
     "click button[value=renderQuery]": function(event, t) {
         event.preventDefault();
-        var subject = t.$('input[name=subject]')[0].value;
-        var predicate = t.$('input[name=predicate]')[0].value;
-        var object = t.$('input[name=object]')[0].value;
-        var limit = parseInt(t.$('input[name=limit]')[0].value);
-        console.log(limit);
+        //var subject = t.$('input[name=subject]')[0].value;
+        //var predicate = t.$('input[name=predicate]')[0].value;
+        //var object = t.$('input[name=object]')[0].value;
+        //var limit = parseInt(t.$('input[name=limit]')[0].value);
+
+        var query = t.$('textarea[name=querySparql]')[0].value;
+
+
         if (isNaN(limit))
             limit = 100; // default value
 
-        Meteor.call('callAsyncQueryHDTFile', subject, predicate, object, limit, function(err, results) {
+        var offset = 0;
+
+        Meteor.call('querySelectFuseki', query, function(errors, results) {
+            //console.log(results.results.bindings);
             var settings = {
-                dataset: results
-            };
-            //storeResults(settings);
+                dataset: results.results.bindings
+            }
+            console.log(settings);
             loadNew(settings);
         });
+
+        //Meteor.call('callAsyncQueryHDTFile', subject, predicate, object, offset, limit, function(err, results) {
+        //    var settings = {
+        //        dataset: results
+        //    };
+        //    //storeResults(settings);
+        //    loadNew(settings);
+        //});
     }, "click button[id=loadRandom]":function() {
         console.log('loadRandom', App);
         loadRandom();
@@ -81,9 +95,12 @@ function newGraphFromHDTResultSet(dataset){
     var resG = Viva.Graph.graph();
     if (dataset.length > 0) {
         for (var cur in dataset) {
-            resG.addNode(dataset[cur].object);
-            resG.addNode(dataset[cur].predicate);
-            resG.addLink(dataset[cur].subject, dataset[cur].object, dataset[cur].predicate);
+            //resG.addNode(dataset[cur].object);
+            resG.addNode(dataset[cur].object.value);
+            //resG.addNode(dataset[cur].predicate);
+            resG.addNode(dataset[cur].property.value);
+            //resG.addLink(dataset[cur].subject, dataset[cur].object, dataset[cur].predicate);
+            resG.addLink(dataset[cur].subject.value, dataset[cur].object.value, dataset[cur].property.value);
         }
     }
     return resG
@@ -94,12 +111,25 @@ var App = {};
 function onLoad() {
     App.graphGenerator = Viva.Graph.generator();
     App.graph = App.graphGenerator.grid(50, 10);
+//Def values
+//    App.layout = Viva.Graph.Layout.forceDirected(App.graph, {
+//        springLength : 30,
+//        springCoeff: 0.0008,
+//        gravity : -1.2,
+//        theta : 0.8,
+//        dragCoeff : 0.02,
+//        timeStep : 20
+//    });
+ 
     App.layout = Viva.Graph.Layout.forceDirected(App.graph, {
-        //springLength : 10,
+        springLength : 30,
         springCoeff: 0.0008,
+        gravity : -1.2,
+        theta : 0.8,
         dragCoeff : 0.02,
-        gravity : -1.2
+        timeStep : 15
     });
+
     App.graphics = Viva.Graph.View.webglGraphics();
 
     var circleNode = buildCircleNodeShader();
@@ -113,7 +143,7 @@ function onLoad() {
     });
 
     App.renderer = Viva.Graph.View.renderer(App.graph, {
-        layout: App.layout, // FIXME
+        //layout: App.layout, // FIXME
         graphics: App.graphics,
         container: document.getElementById('graph-container')
     });
@@ -145,6 +175,9 @@ function onLoad() {
         console.log('Mouse left node: ' + node.id);
     }).dblClick(function (node) {
         console.log('Double click on node: ' + node.id);
+        console.log('Delete node: ' + node.id);
+        App.graph.removeNode(node.id);
+        
     }).click(function (node) {
         console.log('Single click on node: ' + node.id);
     });
