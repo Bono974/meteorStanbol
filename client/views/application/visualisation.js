@@ -1,6 +1,6 @@
 QueryResult = new Mongo.Collection("resultHDT");
 
-Template.visualisation.rendered = function() {
+Template.visuSPARQL.rendered = function() {
     onLoad();
 };
 
@@ -44,7 +44,8 @@ Template.visualisation.events({
         if (sparqlChooser1) {
             Meteor.call('querySelectMarmotta', query, function(errors, results) {
                 var settings = {
-                    dataset: results.results.bindings
+                    dataset: results.results.bindings,
+                    extend: false
                 }
                 loadNew(settings);
                 console.log(settings);
@@ -52,7 +53,8 @@ Template.visualisation.events({
         } else if(sparqlChooser2) {
             Meteor.call('querySelectFuseki', query, function(errors, results) {
                 var settings = {
-                    dataset: results.results.bindings
+                    dataset: results.results.bindings,
+                    extend: false
                 }
                 loadNew(settings);
             });
@@ -100,7 +102,11 @@ function newGraphFromHDTResultSet(settings){
     var dataset = settings.dataset;
     var root = settings.root;
 
-    var resG = Viva.Graph.graph();
+    var resG;
+    if (settings.extend)
+        resG = settings.graph;
+    else
+        resG = Viva.Graph.graph();
 
     if (typeof(root) != "undefined") {
         resG.addNode(root);
@@ -116,11 +122,11 @@ function newGraphFromHDTResultSet(settings){
                 // subject is the 'root'
                 // predicate may be null
                 // object is defined
-                resG.addNode('ROOT');
+                //resG.addNode('ROOT');
             }
         } else {
-            resG.addNode('ROOT');
-            resG.addLink(root, 'ROOT');
+            //resG.addNode('ROOT');
+            //resG.addLink(root, 'ROOT');
         }
     } else if (dataset.length > 0) {
         var tmpObject = dataset[0].object;
@@ -153,16 +159,15 @@ function newGraphFromHDTResultSet(settings){
             } else {
                 // <Subject?, predicate?, Object?>
                 // error ?
-                root = "toto";
-                resG.addNode('ROOT');
-                resG.addLink(root, 'ROOT');
+                //root = "toto";
+                //resG.addNode('ROOT');
+                //resG.addLink(root, 'ROOT');
             }
         }
     } else {
-        root = "toto";
-        resG.addNode('ROOT');
-        resG.addLink(root, 'ROOT');
-        
+        //root = "toto";
+        //resG.addNode('ROOT');
+        //resG.addLink(root, 'ROOT');
     }
     return resG;
 }
@@ -250,18 +255,22 @@ function onLoad() {
             Meteor.call('querySelectMarmotta', query, function(errors, results) {
                 var settings = {
                     dataset: results.results.bindings,
-                    root: node.id
+                    root: node.id,
+                    extend: true,
+                    graph: App.graph
                 }
-                loadNew(settings);
+                extendGraph(settings);
                 console.log(settings);
             });
         } else if(sparqlChooser2) {
             Meteor.call('querySelectFuseki', query, function(errors, results) {
                 var settings = {
                     dataset: results.results.bindings,
-                    root: node.id
+                    root: node.id,
+                    extend: true,
+                    graph: App.graph
                 }
-                loadNew(settings);
+                extendGraph(settings);
                 console.log(settings);
             });
         }
@@ -294,6 +303,10 @@ function loadNew(settings) {
 
     var newGraph = newGraphFromHDTResultSet(settings);
     copyGraph(newGraph, App.graph);
+}
+
+function extendGraph(settings) {
+    newGraphFromHDTResultSet(settings);
 }
 
 function copyGraph(from, to) {
