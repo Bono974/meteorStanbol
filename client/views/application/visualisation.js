@@ -43,10 +43,11 @@ Template.visualisation.events({
 
         if (sparqlChooser1) {
             Meteor.call('querySelectMarmotta', query, function(errors, results) {
-            var settings = {
-                dataset: results.results.bindings
-            }
-            loadNew(settings);
+                var settings = {
+                    dataset: results.results.bindings
+                }
+                loadNew(settings);
+                console.log(settings);
             });
         } else if(sparqlChooser2) {
             Meteor.call('querySelectFuseki', query, function(errors, results) {
@@ -95,20 +96,75 @@ function storeResults(settings) {
 
 App = {};
 
-function newGraphFromHDTResultSet(dataset){
+function newGraphFromHDTResultSet(settings){
+    var dataset = settings.dataset;
+    var root = settings.root;
+
     var resG = Viva.Graph.graph();
-    if (dataset.length > 0) {
-        for (var cur in dataset) {
-            //resG.addNode(dataset[cur].object);
-            resG.addNode(dataset[cur].object.value);
-            //resG.addNode(dataset[cur].predicate);
-            //resG.addNode(dataset[cur].property.value);
-            //resG.addLink(dataset[cur].subject, dataset[cur].object, dataset[cur].predicate);
-            //resG.addLink(dataset[cur].subject.value, dataset[cur].object.value, dataset[cur].property.value);
-            resG.addLink(dataset[cur].subject.value, dataset[cur].object.value);
+
+    if (typeof(root) != "undefined") {
+        resG.addNode(root);
+        if (dataset.length > 0) {
+            var tmpObject = dataset[0].object;
+            if (typeof(tmpObject) != "undefined")
+                for (var cur in dataset) {
+                    resG.addNode(dataset[cur].object.value);
+                    resG.addLink(root, dataset[cur].object.value);
+                }
+            else {
+                //impossible :
+                // subject is the 'root'
+                // predicate may be null
+                // object is defined
+                resG.addNode('ROOT');
+            }
+        } else {
+            resG.addNode('ROOT');
+            resG.addLink(root, 'ROOT');
         }
+    } else if (dataset.length > 0) {
+        var tmpObject = dataset[0].object;
+        var tmpSubject = dataset[0].subject;
+        if (typeof(tmpObject) != "undefined")
+            if (typeof(tmpSubject) != "undefined")
+                // <Subject, predicate?, Object>
+                for (var cur in dataset) {
+                    resG.addNode(dataset[cur].object.value);
+                    resG.addLink(dataset[cur].subject.value, dataset[cur].object.value);
+                }
+            else {
+                // <Subject?, predicate?, Object>
+                tmpSubject = "rootSubject";
+                resG.addNode(tmpSubject);
+                for (var cur in dataset) {
+                    resG.addNode(dataset[cur].object.value);
+                    resG.addLink(tmpSubject, dataset[cur].object.value);
+                }
+            }
+        else {
+            if (typeof(tmpSubject) != "undefined") {
+                // <Subject, predicate?, Object?>
+                tmpObject = "rootObject";
+                resG.addNode(tmpObject);
+                for (var cur in dataset) {
+                    resG.addNode(dataset[cur].subject.value);
+                    resG.addLink(tmpObject, dataset[cur].subject.value);
+                }
+            } else {
+                // <Subject?, predicate?, Object?>
+                // error ?
+                root = "toto";
+                resG.addNode('ROOT');
+                resG.addLink(root, 'ROOT');
+            }
+        }
+    } else {
+        root = "toto";
+        resG.addNode('ROOT');
+        resG.addLink(root, 'ROOT');
+        
     }
-    return resG
+    return resG;
 }
 
 var App = {};
@@ -125,7 +181,7 @@ function onLoad() {
 //        dragCoeff : 0.02,
 //        timeStep : 20
 //    });
- 
+
     App.layout = Viva.Graph.Layout.forceDirected(App.graph, {
         springLength : 30,
         springCoeff: 0.0008,
@@ -163,13 +219,10 @@ function onLoad() {
         var object = null;
         var limit = 100; //FIXME
 
-
-
         App.graph.forEachLinkedNode(node.id, function(linkedNode, link) {
             console.log("Connected node: ", linkedNode.id, linkedNode.data);
             console.log(link);
         });
-
 
 
         //Meteor.call("callAsyncQueryHDTFile", subject, predicate, object, limit, function (err, results) {
@@ -184,6 +237,34 @@ function onLoad() {
         App.graph.removeNode(node.id);
     }).click(function (node) {
         console.log('Single click on node: ' + node.id);
+
+        var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
+        var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
+
+        var query = " SELECT * "+
+                    " WHERE {"+
+                    '<'+node.id+"> ?p ?object" +
+                    "}" +
+                    "LIMIT 100000";
+        if (sparqlChooser1) {
+            Meteor.call('querySelectMarmotta', query, function(errors, results) {
+                var settings = {
+                    dataset: results.results.bindings,
+                    root: node.id
+                }
+                loadNew(settings);
+                console.log(settings);
+            });
+        } else if(sparqlChooser2) {
+            Meteor.call('querySelectFuseki', query, function(errors, results) {
+                var settings = {
+                    dataset: results.results.bindings,
+                    root: node.id
+                }
+                loadNew(settings);
+                console.log(settings);
+            });
+        }
     });
 
     var multiSelectOverlay;
@@ -211,8 +292,7 @@ function loadRandom() {
 function loadNew(settings) {
     App.graph.clear();
 
-    var newGraph = newGraphFromHDTResultSet(settings.dataset);
-    //var newGraph = App.graphGenerator.grid(Math.random() * 20 |0 , Math.random() * 20 |0);
+    var newGraph = newGraphFromHDTResultSet(settings);
     copyGraph(newGraph, App.graph);
 }
 
