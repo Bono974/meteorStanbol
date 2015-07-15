@@ -117,6 +117,7 @@ function newGraphFromHDTResultSet(settings){
                     resG.addNode(dataset[cur].object.value);
                     resG.addLink(root, dataset[cur].object.value);
                 }
+
             else {
                 //impossible :
                 // subject is the 'root'
@@ -246,34 +247,91 @@ function onLoad() {
         var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
         var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
 
-        var query = " SELECT * "+
-                    " WHERE {"+
-                    '<'+node.id+"> ?p ?object" +
-                    "}" +
-                    "LIMIT 100000";
-        if (sparqlChooser1) {
-            Meteor.call('querySelectMarmotta', query, function(errors, results) {
-                var settings = {
-                    dataset: results.results.bindings,
-                    root: node.id,
-                    extend: true,
-                    graph: App.graph
-                }
-                extendGraph(settings);
-                console.log(settings);
-            });
-        } else if(sparqlChooser2) {
-            Meteor.call('querySelectFuseki', query, function(errors, results) {
-                var settings = {
-                    dataset: results.results.bindings,
-                    root: node.id,
-                    extend: true,
-                    graph: App.graph
-                }
-                extendGraph(settings);
-                console.log(settings);
-            });
+        var current  = Session.get("currentNodeSelected");
+        var previous = Session.get("previousNodeSelected");
+        if (typeof(previous) == "undefined")
+            Session.set("previousNodeSelected", node.id);
+        else {
+            Session.set("previousNodeSelected", current);
         }
+        Session.set("currentNodeSelected", node.id);
+
+        var currentNodeColor = getColor(node.id);
+        var colorSelected = 0xFFA500ff;
+        var colorNonSelected = 0x009ee8ff;
+
+        changeNodeColor(current, colorNonSelected);
+        current = Session.get("currentNodeSelected");
+        changeNodeColor(current, colorSelected);
+
+        // determine if node is Class or Individual
+        // Query will differ in each case
+        var testClass = nodeIsIndividual(node.id);
+        console.log(testClass);
+
+        if (currentNodeColor == colorSelected) { // if we click on the same node again
+            // extend truncate node by predicate choosen by UI
+            //
+            // SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)
+            // WHERE {
+            //  <node.id> <predicateUI[x]> ?object .
+            // }
+            // GROUP BY ?predicate
+        } else { // first click on the node
+            // Query to fetch all DISTINCT predicate/object available
+            // and fill a table for user to choose a predicate [x] checkbox
+            //
+            // SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)
+            // WHERE {
+            //  <node.id> ?predicate ?object .
+            // }
+            // GROUP BY ?predicate
+        }
+
+        function changeNodeColor(node, color) {
+            var nodeUII = App.graphics.getNodeUI(node);
+            nodeUII.color = color;
+        }
+        function getColor(node) {
+            var nodeUII = App.graphics.getNodeUI(node);
+            return nodeUII.color;
+        }
+        function nodeIsIndividual(node) {
+            if (node.search("http://") == -1)
+                return true;
+            return false;
+        }
+
+
+
+        //var query = " SELECT * "+
+        //            " WHERE {"+
+        //            '<'+node.id+"> ?p ?object" +
+        //            "}" +
+        //            "LIMIT 100000";
+        //if (sparqlChooser1) {
+        //    Meteor.call('querySelectMarmotta', query, function(errors, results) {
+        //        var settings = {
+        //            dataset: results.results.bindings,
+        //            root: node.id,
+        //            extend: true,
+        //            graph: App.graph
+        //        }
+        //        extendGraph(settings);
+        //        console.log(settings);
+        //    });
+        //} else if(sparqlChooser2) {
+        //    Meteor.call('querySelectFuseki', query, function(errors, results) {
+        //        var settings = {
+        //            dataset: results.results.bindings,
+        //            root: node.id,
+        //            extend: true,
+        //            graph: App.graph
+        //        }
+        //        extendGraph(settings);
+        //        console.log(settings);
+        //    });
+        //}
     });
 
     var multiSelectOverlay;
