@@ -4,16 +4,21 @@ Template.visuSPARQL.rendered = function() {
     onLoad();
 };
 
+
 Template.visualisation.helpers({
     queryResult: function () {
         return QueryResult.find({});
-    },settingsTable: function () {
+    },
+    settingsTable: function () {
         return {
             collection: QueryResult,
             rowsPerPage: 10,
             showFilter: true,
             //fields: ['subject', 'predicate', 'object']
         };
+    },
+    listPredicate: function(){
+        return Session.get('listPredicates');
     }
 });
 
@@ -78,7 +83,6 @@ function storeResultsFull(settings) {
             predicate: dataset[cur].predicate,
             object: dataset[cur].object
         });
-
     //QueryResult.batchInsert(dataset);
 }
 
@@ -103,7 +107,6 @@ function newGraphFromHDTResultSet(settings){
                     resG.addNode(dataset[cur].object.value);
                     resG.addLink(root, dataset[cur].object.value);
                 }
-
             else {
                 //impossible :
                 // subject is the 'root'
@@ -207,9 +210,6 @@ function onLoad() {
         console.log(node);
 
         var subject = node.id;
-        var predicate = null;
-        var object = null;
-
         var metaNode = $('textarea[name=tmpMetaNode]');
 
         var res = "" + node.id +  "\n";
@@ -231,34 +231,34 @@ function onLoad() {
                         "FILTER (STR(?name)='"+node.id+"')"+
                     "}"+
                     "GROUP BY ?predicate";
-        if (sparqlChooser1) {
+        if (sparqlChooser1)
             Meteor.call('querySelectMarmotta', query, function(errors, results) {
                 updateMetaRes(results.results.bindings, res, metaNode);
             });
-        } else if(sparqlChooser2) {
+        else if(sparqlChooser2)
             Meteor.call('querySelectFuseki', query, function(errors, results) {
                 updateMetaRes(results.results.bindings, res, metaNode);
             });
-        }
 
         function getPredicateFromResult(results) {
-            var res = "\n";
+            var res = [];
             for (var cur in results)
                 if (typeof(results[cur].predicate) != "undefined")
-                    res += results[cur].predicate.value + "\n";
+                    res.push(results[cur].predicate.value);
             return res;
         }
         function updateMetaRes(results, atmoment, metaNode) {
             var predicates = getPredicateFromResult(results);
-            atmoment += "Predicates availables :" + predicates;
+            Session.set('listPredicates', predicates);
+            //atmoment += "Predicates availables :" + predicates;
             metaNode.val(atmoment);
         }
     }).mouseLeave(function (node) {
         console.log('Mouse left node: ' + node.id);
     }).dblClick(function (node) {
         console.log('Double click on node: ' + node.id);
-        console.log('Delete node: ' + node.id);
-        App.graph.removeNode(node.id);
+        //console.log('Delete node: ' + node.id);
+        //App.graph.removeNode(node.id);
     }).click(function (node) {
         console.log('Single click on node: ' + node.id);
 
@@ -300,14 +300,14 @@ function onLoad() {
             // }
             // GROUP BY ?predicate
 
-            var predicateUI = $('textarea[name=tmpPredicate]')[0].value;
-            console.log(predicateUI);
+            var predicateUI = $('select[name=predicateC]')[0];
+            predicateUI = predicateUI[predicateUI.selectedIndex].value;
 
             var query =
                 "PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#>"+
                 "SELECT *"+
                 " WHERE {"+
-                    "<"+node.id+"> "+predicateUI+" ?object" +
+                    "<"+node.id+"> <"+predicateUI+"> ?object" +
                 "}";
             console.log(query);
             if (sparqlChooser1) {

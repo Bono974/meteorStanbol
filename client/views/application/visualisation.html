@@ -6,7 +6,6 @@
     width: 100%;
     position: absolute;
     overflow: hidden;
-    margin: 100px 30px;
 }
 .graph-overlay {
     position: absolute;
@@ -35,30 +34,31 @@
     z-index: 99999;
 }
 </style>
-Visualisation <br/><br/>
-<form action="" name="renderTriple" class="renderTriple">
-    <!--
-    <input type="text" placeholder="subject" name="subject">
-    <input type="text" placeholder="predicate" name="predicate">
-    <input type="text" placeholder="object" name="object">
-    <input type="text" placeholder="LIMIT" name="limit"> <br/>
-    -->
+<div id=main>
+    <div class="container">
+            Visualisation <br/><br/>
+            <form action="" name="renderTriple" class="renderTriple">
+                <input type="radio" name="selectSPARQL" value="marmotta" checked="checked"> Marmotta
+                <input type="radio" name="selectSPARQL" value="fuseki"> Fuseki
+                <button value="renderQuery"> OK </button> <br/>
+                <textarea name="querySparql" placeholder="Query SPARQL" rows="10" cols="70"></textarea>
 
-    <input type="radio" name="selectSPARQL" value="marmotta"> Marmotta
-    <input type="radio" name="selectSPARQL" value="fuseki"> Fuseki
-    <button value="renderQuery"> OK </button> <br/>
-    <textarea name="querySparql" placeholder="Query SPARQL" rows="10" cols="90"></textarea>
+                <textarea name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea><br/>
+                <select name='predicateC'>
+                    {{#each listPredicate}}
+                    <option value={{.}}> {{.}} </option>
+                    {{/each}}
+                </select>
 
-    <textarea name="tmpPredicate" placeholder="Predicate to choose: TEMPORARY" rows="10" cols="90"></textarea>
-    <textarea name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="90"></textarea>
+                <!-- {{> reactiveTable settings=settingsTable}} -->
 
-    <!-- {{> reactiveTable settings=settingsTable}} -->
+            </form>
 
-</form>
+            <button id="toggleRender" value="pause">Pause render</button>
+            <button id="loadRandom">Load random graph</button>
 
-<button id="toggleRender" value="pause">Pause render</button>
-<button id="loadRandom">Load random graph</button>
-
+    </div>
+</div>
 {{>visuSPARQL}}
 </template>
 
