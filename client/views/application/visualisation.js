@@ -210,16 +210,49 @@ function onLoad() {
         var predicate = null;
         var object = null;
 
-        App.graph.forEachLinkedNode(node.id, function(linkedNode, link) {
-            console.log("Connected node: ", linkedNode.id, linkedNode.data);
-            console.log(link);
-        });
+        var metaNode = $('textarea[name=tmpMetaNode]');
 
+        var res = "" + node.id +  "\n";
 
-        //Meteor.call("callAsyncQueryHDTFile", subject, predicate, object, limit, function (err, results) {
-        //    console.log("LOLOLOL");
-        //    console.log(results)
-        //});
+        var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
+        var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
+        var query = "";
+
+        if (!nodeIsIndividual(node.id))
+            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+                    "WHERE {"+
+                        '<'+node.id+"> ?predicate ?object"+
+                    "}"+
+                    "GROUP BY ?predicate";
+        else
+            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+                    "WHERE {"+
+                        "?subject ?predicate ?name."+
+                        "FILTER (STR(?name)='"+node.id+"')"+
+                    "}"+
+                    "GROUP BY ?predicate";
+        if (sparqlChooser1) {
+            Meteor.call('querySelectMarmotta', query, function(errors, results) {
+                updateMetaRes(results.results.bindings, res, metaNode);
+            });
+        } else if(sparqlChooser2) {
+            Meteor.call('querySelectFuseki', query, function(errors, results) {
+                updateMetaRes(results.results.bindings, res, metaNode);
+            });
+        }
+
+        function getPredicateFromResult(results) {
+            var res = "\n";
+            for (var cur in results)
+                if (typeof(results[cur].predicate) != "undefined")
+                    res += results[cur].predicate.value + "\n";
+            return res;
+        }
+        function updateMetaRes(results, atmoment, metaNode) {
+            var predicates = getPredicateFromResult(results);
+            atmoment += "Predicates availables :" + predicates;
+            metaNode.val(atmoment);
+        }
     }).mouseLeave(function (node) {
         console.log('Mouse left node: ' + node.id);
     }).dblClick(function (node) {
@@ -246,7 +279,6 @@ function onLoad() {
         console.log(currentNodeColor);
         var colorSelected       = 0xFFA500ff;
         var colorNonSelected    = 0x009ee8ff;
-
 
         if (typeof(current) != "undefined" && currentNodeColor != colorSelected)
             setNodeColor(current, colorNonSelected);
@@ -349,33 +381,6 @@ function onLoad() {
             var nodeUII = App.graphics.getNodeUI(node.id);
             return nodeUII.color;
         }
-        function nodeIsIndividual(nodeName) {
-            if (nodeName.search("http://") == -1)
-                if (nodeName.search("genid-start-") == -1) // Only from HDT file endpoint
-                    if (testIfIndividualBySPARQL())
-                        return true;
-            return false;
-
-            function testIfIndividualBySPARQL() { // Marmotta
-                // an object can begin with _:
-                // so : _:node can be an object
-                // as in _:14e481d5eebd6
-                // SELECT *
-                // WHERE {
-                //  _:14e67b500b833a ?predicate ?object
-                // }
-                // LIMIT 10
-                //
-                // SELECT (COUNT(DISTINCT ?object) AS ?nb)
-                // WHERE {
-                //   _:14e67b500b833a ?property ?object
-                // }
-                // if ?nb
-                //
-                // TODO TODO
-                return true; // Test if 'node' is individual or entity via SPARQL query
-            }
-        }
     });
 
     var multiSelectOverlay;
@@ -392,6 +397,33 @@ function onLoad() {
             multiSelectOverlay = null;
         }
     });
+    function nodeIsIndividual(nodeName) {
+        if (nodeName.search("http://") == -1)
+            if (nodeName.search("genid-start-") == -1) // Only from HDT file endpoint
+                if (testIfIndividualBySPARQL())
+                    return true;
+        return false;
+
+        function testIfIndividualBySPARQL() { // Marmotta
+            // an object can begin with _:
+            // so : _:node can be an object
+            // as in _:14e481d5eebd6
+            // SELECT *
+            // WHERE {
+            //  _:14e67b500b833a ?predicate ?object
+            // }
+            // LIMIT 10
+            //
+            // SELECT (COUNT(DISTINCT ?object) AS ?nb)
+            // WHERE {
+            //   _:14e67b500b833a ?property ?object
+            // }
+            // if ?nb
+            //
+            // TODO TODO
+            return true; // Test if 'node' is individual or entity via SPARQL query
+        }
+    }
 }
 
 function loadRandom() {
@@ -553,117 +585,117 @@ function buildCircleNodeShader() {
                 }
 
 
-function startMultiSelect(graph, renderer, layout) {
-  var graphics = renderer.getGraphics();
-  var domOverlay = document.querySelector('.graph-overlay');
-  var overlay = createOverlay(domOverlay);
-  overlay.onAreaSelected(handleAreaSelected);
+            function startMultiSelect(graph, renderer, layout) {
+                var graphics = renderer.getGraphics();
+                var domOverlay = document.querySelector('.graph-overlay');
+                var overlay = createOverlay(domOverlay);
+                overlay.onAreaSelected(handleAreaSelected);
 
-  return overlay;
+                return overlay;
 
-  function handleAreaSelected(area) {
-    // For the sake of this demo we are using silly O(n) implementation.
-    // Could be improved with spatial indexing if required.
-    var topLeft = graphics.transformClientToGraphCoordinates({
-      x: area.x,
-      y: area.y
-    });
+                function handleAreaSelected(area) {
+                    // For the sake of this demo we are using silly O(n) implementation.
+                    // Could be improved with spatial indexing if required.
+                    var topLeft = graphics.transformClientToGraphCoordinates({
+                        x: area.x,
+                        y: area.y
+                    });
 
-    var bottomRight = graphics.transformClientToGraphCoordinates({
-      x: area.x + area.width,
-      y: area.y + area.height
-    });
+                    var bottomRight = graphics.transformClientToGraphCoordinates({
+                        x: area.x + area.width,
+                        y: area.y + area.height
+                    });
 
-    graph.forEachNode(higlightIfInside);
-    renderer.rerender();
+                    graph.forEachNode(higlightIfInside);
+                    renderer.rerender();
 
-    return;
+                    return;
 
-    function higlightIfInside(node) {
-      var nodeUI = graphics.getNodeUI(node.id);
-      if (isInside(node.id, topLeft, bottomRight)) {
-        nodeUI.color = 0xFFA500ff;
-        nodeUI.size = 20;
-      } else {
-        nodeUI.color = 0x009ee8ff;
-        nodeUI.size = 10;
-      }
-    }
+                    function higlightIfInside(node) {
+                        var nodeUI = graphics.getNodeUI(node.id);
+                        if (isInside(node.id, topLeft, bottomRight)) {
+                            nodeUI.color = 0xFFA500ff;
+                            nodeUI.size = 20;
+                        } else {
+                            nodeUI.color = 0x009ee8ff;
+                            nodeUI.size = 10;
+                        }
+                    }
 
-    function isInside(nodeId, topLeft, bottomRight) {
-      var nodePos = layout.getNodePosition(nodeId);
-      return (topLeft.x < nodePos.x && nodePos.x < bottomRight.x &&
-        topLeft.y < nodePos.y && nodePos.y < bottomRight.y);
-    }
-  }
-}
-function createOverlay(overlayDom) {
-  var selectionClasName = 'graph-selection-indicator';
-  var selectionIndicator = overlayDom.querySelector('.' + selectionClasName);
-  if (!selectionIndicator) {
-    selectionIndicator = document.createElement('div');
-    selectionIndicator.className = selectionClasName;
-    overlayDom.appendChild(selectionIndicator);
-  }
+                    function isInside(nodeId, topLeft, bottomRight) {
+                        var nodePos = layout.getNodePosition(nodeId);
+                        return (topLeft.x < nodePos.x && nodePos.x < bottomRight.x &&
+                                topLeft.y < nodePos.y && nodePos.y < bottomRight.y);
+                    }
+                }
+            }
+            function createOverlay(overlayDom) {
+                var selectionClasName = 'graph-selection-indicator';
+                var selectionIndicator = overlayDom.querySelector('.' + selectionClasName);
+                if (!selectionIndicator) {
+                    selectionIndicator = document.createElement('div');
+                    selectionIndicator.className = selectionClasName;
+                    overlayDom.appendChild(selectionIndicator);
+                }
 
-  var notify = [];
-  var dragndrop = Viva.Graph.Utils.dragndrop(overlayDom);
-  var selectedArea = {
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0
-  };
-  var startX = 0;
-  var startY = 0;
+                var notify = [];
+                var dragndrop = Viva.Graph.Utils.dragndrop(overlayDom);
+                var selectedArea = {
+                    x: 0,
+                    y: 0,
+                    width: 0,
+                    height: 0
+                };
+                var startX = 0;
+                var startY = 0;
 
-  dragndrop.onStart(function(e) {
-    startX = selectedArea.x = e.clientX;
-    startY = selectedArea.y = e.clientY;
-    selectedArea.width = selectedArea.height = 0;
+                dragndrop.onStart(function(e) {
+                    startX = selectedArea.x = e.clientX;
+                    startY = selectedArea.y = e.clientY;
+                    selectedArea.width = selectedArea.height = 0;
 
-    updateSelectedAreaIndicator();
-    selectionIndicator.style.display = 'block';
-  });
+                    updateSelectedAreaIndicator();
+                    selectionIndicator.style.display = 'block';
+                });
 
-  dragndrop.onDrag(function(e) {
-    recalculateSelectedArea(e);
-    updateSelectedAreaIndicator();
-    notifyAreaSelected();
-  });
+                dragndrop.onDrag(function(e) {
+                    recalculateSelectedArea(e);
+                    updateSelectedAreaIndicator();
+                    notifyAreaSelected();
+                });
 
-  dragndrop.onStop(function() {
-    selectionIndicator.style.display = 'none';
-  });
+                dragndrop.onStop(function() {
+                    selectionIndicator.style.display = 'none';
+                });
 
-  overlayDom.style.display = 'block';
-    return {
-    onAreaSelected: function(cb) {
-      notify.push(cb);
-    },
-    destroy: function () {
-      overlayDom.style.display = 'none';
-      dragndrop.release();
-    }
-  };
+                overlayDom.style.display = 'block';
+                return {
+                    onAreaSelected: function(cb) {
+                        notify.push(cb);
+                    },
+                        destroy: function () {
+                            overlayDom.style.display = 'none';
+                            dragndrop.release();
+                        }
+                };
 
-  function notifyAreaSelected() {
-    notify.forEach(function(cb) {
-      cb(selectedArea);
-    });
-  }
+                function notifyAreaSelected() {
+                    notify.forEach(function(cb) {
+                        cb(selectedArea);
+                    });
+                }
 
-  function recalculateSelectedArea(e) {
-    selectedArea.width = Math.abs(e.clientX - startX);
-    selectedArea.height = Math.abs(e.clientY - startY);
-    selectedArea.x = Math.min(e.clientX, startX);
-    selectedArea.y = Math.min(e.clientY, startY);
-  }
+                function recalculateSelectedArea(e) {
+                    selectedArea.width = Math.abs(e.clientX - startX);
+                    selectedArea.height = Math.abs(e.clientY - startY);
+                    selectedArea.x = Math.min(e.clientX, startX);
+                    selectedArea.y = Math.min(e.clientY, startY);
+                }
 
-  function updateSelectedAreaIndicator() {
-    selectionIndicator.style.left = selectedArea.x + 'px';
-    selectionIndicator.style.top = selectedArea.y + 'px';
-    selectionIndicator.style.width = selectedArea.width + 'px';
-    selectionIndicator.style.height = selectedArea.height + 'px';
-  }
-}
+                function updateSelectedAreaIndicator() {
+                    selectionIndicator.style.left = selectedArea.x + 'px';
+                    selectionIndicator.style.top = selectedArea.y + 'px';
+                    selectionIndicator.style.width = selectedArea.width + 'px';
+                    selectionIndicator.style.height = selectedArea.height + 'px';
+                }
+            }
