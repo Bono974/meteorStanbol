@@ -44,13 +44,16 @@ Visualisation <br/><br/>
     <input type="text" placeholder="LIMIT" name="limit"> <br/>
     -->
 
-    <textarea name="querySparql" placeholder="Query SPARQL" rows="10" cols="90"></textarea>
     <input type="radio" name="selectSPARQL" value="marmotta"> Marmotta
     <input type="radio" name="selectSPARQL" value="fuseki"> Fuseki
+    <button value="renderQuery"> OK </button> <br/>
+    <textarea name="querySparql" placeholder="Query SPARQL" rows="10" cols="90"></textarea>
 
-    <button value="renderQuery"> OK </button>
+    <textarea name="tmpPredicate" placeholder="Predicate to choose: TEMPORARY" rows="10" cols="90"></textarea>
+
+    <!-- {{> reactiveTable settings=settingsTable}} -->
+
 </form>
-<!-- {{> reactiveTable settings=settingsTable}} -->
 
 <button id="toggleRender" value="pause">Pause render</button>
 <button id="loadRandom">Load random graph</button>
