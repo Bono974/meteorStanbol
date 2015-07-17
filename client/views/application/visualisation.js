@@ -244,60 +244,14 @@ function onLoad() {
     var events = Viva.Graph.webglInputEvents(App.graphics, App.graph);
     events.mouseEnter(function (node) {
         console.log('Mouse entered node: ' + node.id);
-        console.log(node);
 
         var freeze = Session.get("freezeNodeSelection");
-        if (!freeze) {
-            var metaNode = $('textarea[name=tmpMetaNode]');
-
-            var res = "" + node.id +  "\n";
-
-            var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
-            var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
-            var query = "";
-
-            if (!nodeIsIndividual(node.id))
-                query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
-                        "WHERE {"+
-                        '<'+node.id+"> ?predicate ?object"+
-                        "}"+
-                        "GROUP BY ?predicate";
-            else
-                query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
-                    "WHERE {"+
-                    "?subject ?predicate ?name."+
-                    "FILTER (STR(?name)='"+node.id+"')"+
-                    "}"+
-                    "GROUP BY ?predicate";
-
-            if (sparqlChooser1)
-                Meteor.call('querySelectMarmotta', query, function(errors, results) {
-                    updateMetaRes(results.results.bindings, res, metaNode);
-                });
-            else if(sparqlChooser2)
-                Meteor.call('querySelectFuseki', query, function(errors, results) {
-                    updateMetaRes(results.results.bindings, res, metaNode);
-                });
-        }
-
-        function getPredicateFromResult(results) {
-            var res = [];
-            for (var cur in results)
-                if (typeof(results[cur].predicate) != "undefined")
-                    res.push(results[cur].predicate.value);
-            return res;
-        }
-        function updateMetaRes(results, atmoment, metaNode) {
-            var predicates = getPredicateFromResult(results);
-            Session.set('listPredicates', predicates);
-            metaNode.val(atmoment);
-        }
+        if (!freeze)
+            updateMetaNode(node);
     }).mouseLeave(function (node) {
         console.log('Mouse left node: ' + node.id);
     }).dblClick(function (node) {
         console.log('Double click on node: ' + node.id);
-        //console.log('Delete node: ' + node.id);
-        //App.graph.removeNode(node.id);
     }).click(function (node) {
         console.log('Single click on node: ' + node.id);
 
@@ -307,19 +261,7 @@ function onLoad() {
         var current  = Session.get("currentNodeSelected");
         var previous = Session.get("previousNodeSelected");
 
-        //FIXME refactor --> unchecked/switch selection node1 node2
-        if (typeof(previous) == "undefined")
-            Session.set("previousNodeSelected", node);
-        else
-            Session.set("previousNodeSelected", current);
-        Session.set("currentNodeSelected", node);
-
-        var currentNodeColor    = getNodeColor(node);
-
-        if (typeof(current) != "undefined" && currentNodeColor != colorSelected)
-            setNodeColor(current, colorNonSelected);
-        current = Session.get("currentNodeSelected");
-        setNodeColor(current, colorSelected);
+        var currentNodeColor  = getNodeColor(node);
 
         if (currentNodeColor == colorSelected) {
             // Click on the same node again
@@ -367,11 +309,17 @@ function onLoad() {
                 });
             }
         } else {
-            // First click on the node
+            // First click on the node, unckeck previously checked node
             // --> freeze the selection to freeze the metaNode UI.
             // for now : temporary button to 'release' the selection
+            updateMetaNode(node);
+            uncheckNode(node);
+            if (typeof(current) != "undefined" && currentNodeColor != colorSelected)
+                setNodeColor(current, colorNonSelected);
+            current = Session.get("currentNodeSelected");
+            setNodeColor(current, colorSelected);
+
             var freezeNodeSelection = Session.get('freezeNodeSelection');
-            console.log(freezeNodeSelection);
             if (typeof(freezeNodeSelection) == 'undefined' || !freezeNodeSelection)
                 if ($('#toggleFreeze')[0].value == 'unfreezed') {
                     $('#toggleFreeze')[0].value = 'freezed';
@@ -395,19 +343,68 @@ function onLoad() {
             multiSelectOverlay = null;
         }
     });
+    function updateMetaNode(node) {
+        var metaNode = $('textarea[name=tmpMetaNode]');
+
+        var res = "" + node.id +  "\n";
+        metaNode.val(res);
+
+        var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
+        var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
+        var query = "";
+
+        if (!nodeIsIndividual(node.id))
+            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+                "WHERE {"+
+                '<'+node.id+"> ?predicate ?object"+
+                "}"+
+                "GROUP BY ?predicate";
+        else
+            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+                "WHERE {"+
+                "?subject ?predicate ?name."+
+                "FILTER (STR(?name)='"+node.id+"')"+
+                "}"+
+                "GROUP BY ?predicate";
+
+        if (sparqlChooser1)
+            Meteor.call('querySelectMarmotta', query, function(errors, results) {
+                updateMetaRes(results.results.bindings, metaNode);
+            });
+        else if(sparqlChooser2)
+            Meteor.call('querySelectFuseki', query, function(errors, results) {
+                updateMetaRes(results.results.bindings, metaNode);
+            });
+
+        function updateMetaRes(results, metaNode) {
+            var predicates = [];
+            for (var cur in results)
+                if (typeof(results[cur].predicate) != "undefined")
+                    res.push(results[cur].predicate.value);
+            Session.set('listPredicates', predicates);
+        }
+    }
 }
 
-function uncheckNode() {
-    var current = Session.get("currentNodeSelected");
+function uncheckNode(node) {
+    var nodeTo;
+    if (typeof(node) != "undefined")
+        nodeTo = node;
+    else
+        nodeTo = "UNCHECKED";
+
+    var current  = Session.get("currentNodeSelected");
+    var previous = Session.get("previousNodeSelected");
     if (typeof(previous) == "undefined")
-        Session.set("previousNodeSelected", "UNCHECKED");
+        Session.set("previousNodeSelected", nodeTo);
     else
         Session.set("previousNodeSelected", current);
 
-    if (current != "UNCHECKED")
-        setNodeColor(current, colorNonSelected);
+    if (typeof(current) != "undefined")
+        if (current != nodeTo)
+            setNodeColor(current, colorNonSelected);
 
-    Session.set("currentNodeSelected", "UNCHECKED");
+    Session.set("currentNodeSelected", nodeTo);
 
 
     //FIXME ? case if we do a rectangular selection
@@ -419,6 +416,7 @@ function uncheckNode() {
     }
 }
 function setNodeColor(node, color) {
+    console.log(node);
     var nodeUII = App.graphics.getNodeUI(node.id);
     if (typeof(nodeUII) != "undefined")
         nodeUII.color = color;
@@ -631,7 +629,7 @@ function buildCircleNodeShader() {
                     function higlightIfInside(node) {
                         var nodeUI = graphics.getNodeUI(node.id);
                         if (isInside(node.id, topLeft, bottomRight)) {
-                            nodeUI.color = 0xFFA500ff;
+                            nodeUI.color = colorSelected; //0xFFA500ff;
                             nodeUI.size = 10;
                         } else {
                             nodeUI.color = colorNonSelected;//0x009ee8ff;
