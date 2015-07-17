@@ -26,6 +26,7 @@
     top: 0;
     z-index: 99999;
 }
+
 #toggleRender {
     margin: 50px;
     position: fixed;
@@ -33,33 +34,59 @@
     top: 4%;
     z-index: 99999;
 }
+#toggleFreeze {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 8%;
+    z-index: 99999;
+}
+#selectSPARQL {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 12%;
+    z-index: 99999;
+}
+#querySPARQL {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 20%;
+    z-index: 99999;
+}
+#tmpMetaMode {
+    margin: 50px;
+    position: fixed;
+    left: 0;
+    top: 45%;
+    z-index: 99999;
+}
 </style>
-<div id=main>
-    <div class="container">
-            Visualisation <br/><br/>
-            <form action="" name="renderTriple" class="renderTriple">
-                <input type="radio" name="selectSPARQL" value="marmotta" checked="checked"> Marmotta
-                <input type="radio" name="selectSPARQL" value="fuseki"> Fuseki
-                <button value="renderQuery"> OK </button> <br/>
-                <textarea name="querySparql" placeholder="Query SPARQL" rows="10" cols="70"></textarea>
-
-                <textarea name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea><br/>
-                <select name='predicateC'>
-                    {{#each listPredicate}}
-                    <option value={{.}}> {{.}} </option>
-                    {{/each}}
-                </select>
-                <button id="toggleFreeze" value="unfreezed"> No node selected </button> <br/>
-
-                <!-- {{> reactiveTable settings=settingsTable}} -->
-
-            </form>
-
-            <button id="toggleRender" value="pause">Pause render</button>
-            <button id="loadRandomGraph">Load random graph</button>
-
-    </div>
+<div id=selectSPARQL>
+    Visualisation <br/>
+    <input id="selectSPARQLM" type="radio" name="selectSPARQL" value="marmotta" checked="checked"> Marmotta
+    <input id="selectSPARQLF" type="radio" name="selectSPARQL" value="fuseki"> Fuseki
 </div>
+
+<div id=querySPARQL>
+    <textarea name="querySparql" placeholder="Query SPARQL" rows="10" cols="70"></textarea> <br/>
+    <button value="renderQuery"> OK </button>
+    <select name='predicateC'>
+        {{#each listPredicate}}
+        <option value={{.}}> {{.}} </option>
+        {{/each}}
+    </select>
+</div>
+
+<!-- {{> reactiveTable settings=settingsTable}} -->
+
+<button id="loadRandomGraph">Load random graph</button>
+<button id="toggleRender" value="pause">Pause render</button>
+<button id="toggleFreeze" value="unfreezed"> No node selected </button>
+
+<textarea id="tmpMetaMode" name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea>
+
 {{>visuSPARQL}}
 </template>
 
