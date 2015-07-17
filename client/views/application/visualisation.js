@@ -255,17 +255,11 @@ function onLoad() {
     }).click(function (node) {
         console.log('Single click on node: ' + node.id);
 
-        var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
-        var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
-
-        var current  = Session.get("currentNodeSelected");
-        var previous = Session.get("previousNodeSelected");
-
         var currentNodeColor  = getNodeColor(node);
 
         if (currentNodeColor == colorSelected) {
             // Click on the same node again
-            // Extend truncate node by predicate choosen by UI
+            // Extend node by predicate choosen by UI
             //
             // SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)
             // WHERE {
@@ -274,44 +268,50 @@ function onLoad() {
             // GROUP BY ?predicate
 
             var predicateUI = $('select[name=predicateC]')[0];
-            predicateUI = predicateUI[predicateUI.selectedIndex].value;
+            predicateUI = predicateUI[predicateUI.selectedIndex];
+            if (typeof(predicateUI) != "undefined") {
+                predicateUI = predicateUI.value;
 
-            var query =
-                "PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#>"+
-                "SELECT *"+
-                " WHERE {"+
+                var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
+                var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
+                var query =
+                    "PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#>"+
+                    "SELECT *"+
+                    " WHERE {"+
                     "<"+node.id+"> <"+predicateUI+"> ?object" +
-                "}";
-            console.log(query);
-            if (sparqlChooser1) {
-                Meteor.call('querySelectMarmotta', query, function(errors, results) {
-                    var settings = {
-                        dataset: results.results.bindings,
-                        root: node.id,
-                        extend: true,
-                        graph: App.graph
-                    }
-                    extendGraph(settings);
-                    releaseNodeSelection();
-                    App.renderer.rerender();
-                });
-            } else if(sparqlChooser2) {
-                Meteor.call('querySelectFuseki', query, function(errors, results) {
-                    var settings = {
-                        dataset: results.results.bindings,
-                        root: node.id,
-                        extend: true,
-                        graph: App.graph
-                    }
-                    extendGraph(settings);
-                    releaseNodeSelection();
-                    App.renderer.rerender();
-                });
+                    "}";
+                console.log(query);
+                if (sparqlChooser1) {
+                    Meteor.call('querySelectMarmotta', query, function(errors, results) {
+                        var settings = {
+                            dataset: results.results.bindings,
+                            root: node.id,
+                            extend: true,
+                            graph: App.graph
+                        }
+                        extendGraph(settings);
+                        releaseNodeSelection();
+                        App.renderer.rerender();
+                    });
+                } else if(sparqlChooser2) {
+                    Meteor.call('querySelectFuseki', query, function(errors, results) {
+                        var settings = {
+                            dataset: results.results.bindings,
+                            root: node.id,
+                            extend: true,
+                            graph: App.graph
+                        }
+                        extendGraph(settings);
+                        releaseNodeSelection();
+                        App.renderer.rerender();
+                    });
+                }
             }
         } else {
             // First click on the node, unckeck previously checked node
             // --> freeze the selection to freeze the metaNode UI.
             // for now : temporary button to 'release' the selection
+            var current  = Session.get("currentNodeSelected");
             updateMetaNode(node);
             uncheckNode(node);
             if (typeof(current) != "undefined" && currentNodeColor != colorSelected)
@@ -380,7 +380,7 @@ function onLoad() {
             var predicates = [];
             for (var cur in results)
                 if (typeof(results[cur].predicate) != "undefined")
-                    res.push(results[cur].predicate.value);
+                    predicates.push(results[cur].predicate.value);
             Session.set('listPredicates', predicates);
         }
     }
@@ -406,14 +406,11 @@ function uncheckNode(node) {
 
     Session.set("currentNodeSelected", nodeTo);
 
-
     //FIXME ? case if we do a rectangular selection
-    App.graph.forEachNode(higlightIfInside);
-
-    function higlightIfInside(node) {
+    App.graph.forEachNode(function clear(node) {
         var nodeUI = App.graphics.getNodeUI(node.id);
         nodeUI.color = colorNonSelected;
-    }
+    });
 }
 function setNodeColor(node, color) {
     console.log(node);
