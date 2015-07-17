@@ -1,5 +1,6 @@
 var colorSelected       = 0xFFA500ff;
-var colorNonSelected    = 0x009ee8ff;
+//var colorNonSelected    = 0x009ee8ff;
+var colorNonSelected = 0x009ee8;
 QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
 Template.visuSPARQL.rendered = function() {
@@ -73,6 +74,24 @@ Template.visualisation.events({
         }
         else*/
         releaseNodeSelection();
+    }, "click button[id=cutSelection]":function() {
+        event.preventDefault();
+
+        App.graph.forEachNode(function(node) {
+            var nodeUI = App.graphics.getNodeUI(node.id);
+            if (nodeUI.color == colorSelected)
+                App.graph.removeNode(node.id);
+            App.renderer.rerender();
+        });
+    }, "click button[id=keepSelection]":function() {
+        event.preventDefault();
+
+        App.graph.forEachNode(function(node) {
+            var nodeUI = App.graphics.getNodeUI(node.id);
+            if (nodeUI.color == colorNonSelected)
+                App.graph.removeNode(node.id);
+            App.renderer.rerender();
+        });
     }
 });
 
@@ -196,10 +215,10 @@ function onLoad() {
 //    });
 
     App.layout = Viva.Graph.Layout.forceDirected(App.graph, {
-        springLength : 30,
+        springLength : 80,
         springCoeff: 0.0008,
         gravity : -8,
-        theta : 0.8,
+        theta : 0.4,
         dragCoeff : 0.09,
         timeStep : 15
     });
@@ -229,8 +248,6 @@ function onLoad() {
 
         var freeze = Session.get("freezeNodeSelection");
         if (!freeze) {
-
-            var subject = node.id;
             var metaNode = $('textarea[name=tmpMetaNode]');
 
             var res = "" + node.id +  "\n";
@@ -273,7 +290,6 @@ function onLoad() {
         function updateMetaRes(results, atmoment, metaNode) {
             var predicates = getPredicateFromResult(results);
             Session.set('listPredicates', predicates);
-            //atmoment += "Predicates availables :" + predicates;
             metaNode.val(atmoment);
         }
     }).mouseLeave(function (node) {
@@ -335,6 +351,7 @@ function onLoad() {
                     }
                     extendGraph(settings);
                     releaseNodeSelection();
+                    App.renderer.rerender();
                 });
             } else if(sparqlChooser2) {
                 Meteor.call('querySelectFuseki', query, function(errors, results) {
@@ -346,10 +363,10 @@ function onLoad() {
                     }
                     extendGraph(settings);
                     releaseNodeSelection();
+                    App.renderer.rerender();
                 });
             }
         } else {
-            console.log("TOTITIITTITIT");
             // First click on the node
             // --> freeze the selection to freeze the metaNode UI.
             // for now : temporary button to 'release' the selection
@@ -361,9 +378,9 @@ function onLoad() {
                     $('#toggleFreeze')[0].innerHTML = 'Release the node selected';
                     Session.set('freezeNodeSelection', true);
                 }
+            App.renderer.rerender();
         }
     });
-
     var multiSelectOverlay;
     App.renderer.run();
 
@@ -391,6 +408,15 @@ function uncheckNode() {
         setNodeColor(current, colorNonSelected);
 
     Session.set("currentNodeSelected", "UNCHECKED");
+
+
+    //FIXME ? case if we do a rectangular selection
+    App.graph.forEachNode(higlightIfInside);
+
+    function higlightIfInside(node) {
+        var nodeUI = App.graphics.getNodeUI(node.id);
+        nodeUI.color = colorNonSelected;
+    }
 }
 function setNodeColor(node, color) {
     var nodeUII = App.graphics.getNodeUI(node.id);
@@ -404,7 +430,7 @@ function getNodeColor(node) {
 function nodeIsIndividual(nodeName) {
     // TODO Blank nodes are not supported for the moment
     if (nodeName.search("http://") == -1)
-        if (nodeName.search("genid-start-") == -1) // Only from HDT/Fuseki SPARQL endpoint
+        //if (nodeName.search("genid-start-") == -1) // Only from HDT/Fuseki SPARQL endpoint
             if (testIfIndividualBySPARQL())
                 return true;
     return false;
@@ -606,9 +632,9 @@ function buildCircleNodeShader() {
                         var nodeUI = graphics.getNodeUI(node.id);
                         if (isInside(node.id, topLeft, bottomRight)) {
                             nodeUI.color = 0xFFA500ff;
-                            nodeUI.size = 20;
+                            nodeUI.size = 10;
                         } else {
-                            nodeUI.color = 0x009ee8ff;
+                            nodeUI.color = colorNonSelected;//0x009ee8ff;
                             nodeUI.size = 10;
                         }
                     }

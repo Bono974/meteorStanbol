@@ -41,25 +41,39 @@
     top: 8%;
     z-index: 99999;
 }
-#selectSPARQL {
+#cutSelection {
     margin: 50px;
     position: fixed;
     left: 0 ;
     top: 12%;
     z-index: 99999;
 }
-#querySPARQL {
+#keepSelection {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 16%;
+    z-index: 99999;
+}
+#selectSPARQL {
     margin: 50px;
     position: fixed;
     left: 0 ;
     top: 20%;
     z-index: 99999;
 }
+#querySPARQL {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 26%;
+    z-index: 99999;
+}
 #tmpMetaMode {
     margin: 50px;
     position: fixed;
     left: 0;
-    top: 45%;
+    top: 50%;
     z-index: 99999;
 }
 </style>
@@ -84,6 +98,8 @@
 <button id="loadRandomGraph">Load random graph</button>
 <button id="toggleRender" value="pause">Pause render</button>
 <button id="toggleFreeze" value="unfreezed"> No node selected </button>
+<button id="cutSelection"> Cut selection ? </button>
+<button id="keepSelection"> Keep selection ? </button>
 
 <textarea id="tmpMetaMode" name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea>
 
