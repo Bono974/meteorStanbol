@@ -1,9 +1,10 @@
-QueryResult = new Mongo.Collection("resultHDT");
+var colorSelected       = 0xFFA500ff;
+var colorNonSelected    = 0x009ee8ff;
+QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
 Template.visuSPARQL.rendered = function() {
     onLoad();
 };
-
 
 Template.visualisation.helpers({
     queryResult: function () {
@@ -36,7 +37,7 @@ Template.visualisation.events({
                     dataset: results.results.bindings,
                     extend: false
                 }
-                loadNew(settings);
+                loadNewGraph(settings);
                 console.log(settings);
             });
         } else if(sparqlChooser2) {
@@ -46,12 +47,11 @@ Template.visualisation.events({
                     dataset: results.results.bindings,
                     extend: false
                 }
-                loadNew(settings);
+                loadNewGraph(settings);
             });
         }
-   }, "click button[id=loadRandom]":function() {
-        console.log('loadRandom', App);
-        loadRandom();
+   }, "click button[id=loadRandomGraph]":function() {
+        loadRandomGraph();
     }, "click button[id=toggleRender]":function() {
         if ($('#toggleRender')[0].value == "pause") {
             $('#toggleRender')[0].value = 'resume';
@@ -63,9 +63,27 @@ Template.visualisation.events({
             $('#toggleRender')[0].innerHTML = 'Pause render';
             resumeRender();
         }
+    }, "click button[id=toggleFreeze]":function() {
+        event.preventDefault();
+        // Already set by cliking on a node
+        /*if ($('#toggleFreeze')[0].value == "unfreezed") {
+            $('#toggleFreeze')[0].value = 'freezed';
+            $('#toggleFreeze')[0].innerHTML = 'Release the node selected';
+            Session.set('freezeNodeSelection', true);
+        }
+        else*/
+        releaseNodeSelection();
     }
 });
 
+function releaseNodeSelection() {
+    if ($('#toggleFreeze')[0].value == "freezed") {
+        $('#toggleFreeze')[0].value = 'unfreezed';
+        $('#toggleFreeze')[0].innerHTML = 'No node selected';
+        Session.set('freezeNodeSelection', false);
+        uncheckNode();
+    }
+}
 function pauseRender() {
     App.renderer.pause();
 }
@@ -88,7 +106,7 @@ function storeResultsFull(settings) {
 
 App = {};
 
-function newGraphFromHDTResultSet(settings){
+function newGraphFromDataset(settings){
     var dataset = settings.dataset;
     var root = settings.root;
 
@@ -209,36 +227,41 @@ function onLoad() {
         console.log('Mouse entered node: ' + node.id);
         console.log(node);
 
-        var subject = node.id;
-        var metaNode = $('textarea[name=tmpMetaNode]');
+        var freeze = Session.get("freezeNodeSelection");
+        if (!freeze) {
 
-        var res = "" + node.id +  "\n";
+            var subject = node.id;
+            var metaNode = $('textarea[name=tmpMetaNode]');
 
-        var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
-        var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
-        var query = "";
+            var res = "" + node.id +  "\n";
 
-        if (!nodeIsIndividual(node.id))
-            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
-                    "WHERE {"+
+            var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
+            var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
+            var query = "";
+
+            if (!nodeIsIndividual(node.id))
+                query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+                        "WHERE {"+
                         '<'+node.id+"> ?predicate ?object"+
-                    "}"+
-                    "GROUP BY ?predicate";
-        else
-            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+                        "}"+
+                        "GROUP BY ?predicate";
+            else
+                query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
                     "WHERE {"+
-                        "?subject ?predicate ?name."+
-                        "FILTER (STR(?name)='"+node.id+"')"+
+                    "?subject ?predicate ?name."+
+                    "FILTER (STR(?name)='"+node.id+"')"+
                     "}"+
                     "GROUP BY ?predicate";
-        if (sparqlChooser1)
-            Meteor.call('querySelectMarmotta', query, function(errors, results) {
-                updateMetaRes(results.results.bindings, res, metaNode);
-            });
-        else if(sparqlChooser2)
-            Meteor.call('querySelectFuseki', query, function(errors, results) {
-                updateMetaRes(results.results.bindings, res, metaNode);
-            });
+
+            if (sparqlChooser1)
+                Meteor.call('querySelectMarmotta', query, function(errors, results) {
+                    updateMetaRes(results.results.bindings, res, metaNode);
+                });
+            else if(sparqlChooser2)
+                Meteor.call('querySelectFuseki', query, function(errors, results) {
+                    updateMetaRes(results.results.bindings, res, metaNode);
+                });
+        }
 
         function getPredicateFromResult(results) {
             var res = [];
@@ -268,27 +291,19 @@ function onLoad() {
         var current  = Session.get("currentNodeSelected");
         var previous = Session.get("previousNodeSelected");
 
+        //FIXME refactor --> unchecked/switch selection node1 node2
         if (typeof(previous) == "undefined")
             Session.set("previousNodeSelected", node);
-        else {
+        else
             Session.set("previousNodeSelected", current);
-        }
         Session.set("currentNodeSelected", node);
 
         var currentNodeColor    = getNodeColor(node);
-        console.log(currentNodeColor);
-        var colorSelected       = 0xFFA500ff;
-        var colorNonSelected    = 0x009ee8ff;
 
         if (typeof(current) != "undefined" && currentNodeColor != colorSelected)
             setNodeColor(current, colorNonSelected);
         current = Session.get("currentNodeSelected");
         setNodeColor(current, colorSelected);
-
-        // determine if node is Class or Individual
-        // Query will differ in each case
-        var testClass = nodeIsIndividual(node.id);
-        console.log(testClass);
 
         if (currentNodeColor == colorSelected) {
             // Click on the same node again
@@ -319,6 +334,7 @@ function onLoad() {
                         graph: App.graph
                     }
                     extendGraph(settings);
+                    releaseNodeSelection();
                 });
             } else if(sparqlChooser2) {
                 Meteor.call('querySelectFuseki', query, function(errors, results) {
@@ -329,57 +345,22 @@ function onLoad() {
                         graph: App.graph
                     }
                     extendGraph(settings);
+                    releaseNodeSelection();
                 });
             }
         } else {
+            console.log("TOTITIITTITIT");
             // First click on the node
-            // Query to fetch all DISTINCT predicate/object available
-            // and fill a table for user to choose a predicate [x] checkbox
-            //
-            // SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)
-            // WHERE {
-            //  <node.id> ?predicate ?object .
-            // }
-            // GROUP BY ?predicate
-
-            var query = " SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
-                " WHERE {"+
-                    '<'+node.id+"> ?predicate ?object" +
-                "}" +
-                "GROUP BY ?predicate";
-            if (sparqlChooser1) {
-                Meteor.call('querySelectMarmotta', query, function(errors, results) {
-                    var settings = {
-                        dataset: results.results.bindings,
-                        root: node.id,
-                        extend: true,
-                        graph: App.graph
-                    }
-                    //extendGraph(settings);
-                    console.log(settings);
-                });
-            } else if(sparqlChooser2) {
-                Meteor.call('querySelectFuseki', query, function(errors, results) {
-                    var settings = {
-                        dataset: results.results.bindings,
-                        root: node.id,
-                        extend: true,
-                        graph: App.graph
-                    }
-                    //extendGraph(settings);
-                    console.log(settings);
-                });
-            }
-        }
-
-        function setNodeColor(node, color) {
-            var nodeUII = App.graphics.getNodeUI(node.id);
-            nodeUII.color = color;
-
-        }
-        function getNodeColor(node) {
-            var nodeUII = App.graphics.getNodeUI(node.id);
-            return nodeUII.color;
+            // --> freeze the selection to freeze the metaNode UI.
+            // for now : temporary button to 'release' the selection
+            var freezeNodeSelection = Session.get('freezeNodeSelection');
+            console.log(freezeNodeSelection);
+            if (typeof(freezeNodeSelection) == 'undefined' || !freezeNodeSelection)
+                if ($('#toggleFreeze')[0].value == 'unfreezed') {
+                    $('#toggleFreeze')[0].value = 'freezed';
+                    $('#toggleFreeze')[0].innerHTML = 'Release the node selected';
+                    Session.set('freezeNodeSelection', true);
+                }
         }
     });
 
@@ -397,52 +378,64 @@ function onLoad() {
             multiSelectOverlay = null;
         }
     });
-    function nodeIsIndividual(nodeName) {
-        if (nodeName.search("http://") == -1)
-            if (nodeName.search("genid-start-") == -1) // Only from HDT file endpoint
-                if (testIfIndividualBySPARQL())
-                    return true;
-        return false;
-
-        function testIfIndividualBySPARQL() { // Marmotta
-            // an object can begin with _:
-            // so : _:node can be an object
-            // as in _:14e481d5eebd6
-            // SELECT *
-            // WHERE {
-            //  _:14e67b500b833a ?predicate ?object
-            // }
-            // LIMIT 10
-            //
-            // SELECT (COUNT(DISTINCT ?object) AS ?nb)
-            // WHERE {
-            //   _:14e67b500b833a ?property ?object
-            // }
-            // if ?nb
-            //
-            // TODO TODO
-            return true; // Test if 'node' is individual or entity via SPARQL query
-        }
-    }
 }
 
-function loadRandom() {
+function uncheckNode() {
+    var current = Session.get("currentNodeSelected");
+    if (typeof(previous) == "undefined")
+        Session.set("previousNodeSelected", "UNCHECKED");
+    else
+        Session.set("previousNodeSelected", current);
+
+    if (current != "UNCHECKED")
+        setNodeColor(current, colorNonSelected);
+
+    Session.set("currentNodeSelected", "UNCHECKED");
+}
+function setNodeColor(node, color) {
+    var nodeUII = App.graphics.getNodeUI(node.id);
+    if (typeof(nodeUII) != "undefined")
+        nodeUII.color = color;
+}
+function getNodeColor(node) {
+    var nodeUII = App.graphics.getNodeUI(node.id);
+    return nodeUII.color;
+}
+function nodeIsIndividual(nodeName) {
+    // TODO Blank nodes are not supported for the moment
+    if (nodeName.search("http://") == -1)
+        if (nodeName.search("genid-start-") == -1) // Only from HDT/Fuseki SPARQL endpoint
+            if (testIfIndividualBySPARQL())
+                return true;
+    return false;
+
+    function testIfIndividualBySPARQL() { // Marmotta
+        // an object can begin with _:
+        // so : _:node can be an object
+        // as in _:14e481d5eebd6
+        // SELECT *
+        // WHERE {
+        //  _:14e67b500b833a ?predicate ?object
+        // }
+        // LIMIT 10
+        //
+        // TODO TODO
+        return true; // Test if 'node' is individual or entity via SPARQL query
+    }
+}
+function loadRandomGraph() {
     App.graph.clear();
     var newGraph = App.graphGenerator.grid(Math.random() * 20 |0 , Math.random() * 20 |0);
     copyGraph(newGraph, App.graph);
 }
-
-function loadNew(settings) {
+function loadNewGraph(settings) {
     App.graph.clear();
-
-    var newGraph = newGraphFromHDTResultSet(settings);
+    var newGraph = newGraphFromDataset(settings);
     copyGraph(newGraph, App.graph);
 }
-
 function extendGraph(settings) {
-    newGraphFromHDTResultSet(settings);
+    newGraphFromDataset(settings);
 }
-
 function copyGraph(from, to) {
     to.beginUpdate();
     from.forEachLink(copyLink);
@@ -451,12 +444,10 @@ function copyGraph(from, to) {
         to.addLink(link.fromId, link.toId);
     }
 }
-
 function WebglCircle(size, color) {
     this.size = size;
     this.color = color;
 }
-
 function buildCircleNodeShader() {
     var ATTRIBUTES_PER_PRIMITIVE = 4,
         nodesFS = [

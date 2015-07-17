@@ -19,7 +19,7 @@
     background: transparent;
     border: 1px solid blue;
 }
-#loadRandom {
+#loadRandomGraph {
     margin: 50px;
     position: fixed;
     left: 0;
@@ -49,13 +49,14 @@
                     <option value={{.}}> {{.}} </option>
                     {{/each}}
                 </select>
+                <button id="toggleFreeze" value="unfreezed"> No node selected </button> <br/>
 
                 <!-- {{> reactiveTable settings=settingsTable}} -->
 
             </form>
 
             <button id="toggleRender" value="pause">Pause render</button>
-            <button id="loadRandom">Load random graph</button>
+            <button id="loadRandomGraph">Load random graph</button>
 
     </div>
 </div>
