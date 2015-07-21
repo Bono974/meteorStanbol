@@ -76,7 +76,6 @@ Template.visualisation.events({
         releaseNodeSelection();
     }, "click button[id=cutSelection]":function() {
         event.preventDefault();
-
         App.graph.forEachNode(function(node) {
             var nodeUI = App.graphics.getNodeUI(node.id);
             if (nodeUI.color == colorSelected)
@@ -125,6 +124,25 @@ function storeResultsFull(settings) {
 
 App = {};
 
+function filterResultByURI(subject, object) { //don't care about order
+    // For now, we filter on the dbpedia
+    var t1 = "undefined";
+    var t2 = "undefined";
+    if (typeof(subject) != "undefined")
+        t1 = subject;
+    if (typeof(object) != "undefined")
+        t2 = object;
+
+    var filters = Session.get("filtersURI");
+    if (typeof(filters) == "undefined")
+        filters = ['http://dbpedia.org/resource/'];
+
+    for (var cur in filters)
+        if ((t1.search(filters[cur]) != -1) || t2.search(filters[cur]) != -1)
+            return false;
+    return true;
+}
+
 function newGraphFromDataset(settings){
     var dataset = settings.dataset;
     var root = settings.root;
@@ -141,8 +159,11 @@ function newGraphFromDataset(settings){
             var tmpObject = dataset[0].object;
             if (typeof(tmpObject) != "undefined")
                 for (var cur in dataset) {
-                    resG.addNode(dataset[cur].object.value);
-                    resG.addLink(root, dataset[cur].object.value);
+                    var object = dataset[cur].object.value;
+                    if (filterResultByURI(object)) {
+                        resG.addNode(object);
+                        resG.addLink(root, object);
+                    }
                 }
             else {
                 //impossible :
@@ -162,16 +183,23 @@ function newGraphFromDataset(settings){
             if (typeof(tmpSubject) != "undefined")
                 // <Subject, predicate?, Object>
                 for (var cur in dataset) {
-                    resG.addNode(dataset[cur].object.value);
-                    resG.addLink(dataset[cur].subject.value, dataset[cur].object.value);
+                    var subject = dataset[cur].subject.value;
+                    var object = dataset[cur].object.value;
+                    if (filterResultByURI(subject, object)) {
+                        resG.addNode(object);
+                        resG.addLink(subject, object);
+                    }
                 }
             else {
                 // <Subject?, predicate?, Object>
                 tmpSubject = "rootSubject"; // FIXME : get the real value from SPARQL query
                 resG.addNode(tmpSubject);
                 for (var cur in dataset) {
-                    resG.addNode(dataset[cur].object.value);
-                    resG.addLink(tmpSubject, dataset[cur].object.value);
+                    var object = dataset[cur].object.value;
+                    if (filterResultByURI(subject, object)) {
+                        resG.addNode(object);
+                        resG.addLink(tmpSubject, object);
+                    }
                 }
             }
         else {
@@ -180,8 +208,11 @@ function newGraphFromDataset(settings){
                 tmpObject = "rootObject"; // FIXME : get the real value from SPARQL query
                 resG.addNode(tmpObject);
                 for (var cur in dataset) {
-                    resG.addNode(dataset[cur].subject.value);
-                    resG.addLink(tmpObject, dataset[cur].subject.value);
+                    var subject = dataset[cur].subject.value;
+                    if (filterResultByURI(subject)) {
+                        resG.addNode(subject);
+                        resG.addLink(tmpObject, subject);
+                    }
                 }
             } else {
                 // <Subject?, predicate?, Object?>
@@ -254,7 +285,6 @@ function onLoad() {
         console.log('Double click on node: ' + node.id);
     }).click(function (node) {
         console.log('Single click on node: ' + node.id);
-
         var currentNodeColor  = getNodeColor(node);
 
         if (currentNodeColor == colorSelected) {

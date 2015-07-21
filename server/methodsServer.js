@@ -47,7 +47,7 @@ function uploadFileRef(filePath, fileData) { // ServOMap requirements (with refe
     fs.writeFile(filePath+".rdf", new Buffer(fileData));
 }
 
-function findTripleFromDoc(subject, predicate, doc) {
+function findTripleFromDoc(subject, predicate, graph, doc) {
     var docObj = JSON.parse(doc);
     var enhancement = docObj.enhancement;
     var strGraph = "@graph";
@@ -66,7 +66,17 @@ function findTripleFromDoc(subject, predicate, doc) {
             res += subject + " " + predicate + " <" + enhancementGraph[cur][strEnhancerEntityReference] + "> . ";
     }
 
-    return res;
+    // Add attachment name as a triplet as well : Must be size 1, if not : retrieve for now the first attachment
+    // FIXME : WARNING /!\ : UTF8 characters are not supported for the moment
+    var attachment = Object.keys(docObj["_attachments"]);
+
+    var predicateRdfsLabel = "rdfs:label"; // Suppose the repository has a PREFIX for rdfs:<Thing>
+    var attachmentTriple =  subject + " " + predicateRdfsLabel + " \""+ attachment + "\"@fr .";
+
+    return {
+        res: res,
+        attachmentTriple: attachmentTriple
+    };
 }
 
 Meteor.methods({
@@ -175,21 +185,43 @@ Meteor.methods({
                 function(done) {
                     db.get(filename, function (err, doc) { //Doc here exist
                         var graph = "http://tomio.dim-ub2.local:8080/marmotta/context/alignementsTests";
-                        var subject = "<" + graph + "#" + doc._id + doc._rev + ">"; // FIXME : temporary ?
+                        var subject = "<" + graph + "#" + doc._id + '_' + doc._rev + ">"; // FIXME : temporary ?
                         var predicate = "<" + graph + "#annotePar>";
-                        var triples = findTripleFromDoc(subject, predicate, doc);
-                        var query = "INSERT DATA  " +
+                        var triples = findTripleFromDoc(subject, predicate, graph, doc);
+                        //FIXME : PREFIX(es) must be a global variable
+                        var query = " PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+                        "INSERT DATA  " +
                         "{"+
                         "    GRAPH <"+ graph +">" +
                         "    {"+
-                        triples +
+                                triples.res +
                         "    }"+
                         "}";
-
-                        done(null, query);
+                        var queryAttachment = " PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+                        "INSERT DATA " +
+                        "{"+
+                        "    GRAPH <"+ graph +">" +
+                        "    {"+
+                                triples.attachmentTriple +
+                        "    }"+
+                        "}";
+                        var res = {
+                            queryEnhancements: query,
+                            queryAttachment: queryAttachment
+                        };
+                        done(null, res);
                     })
                 });
-        Meteor.call('queryUpdate', query.result);
+        Meteor.call('queryUpdateMarmotta', query.result.queryEnhancements, function(err, results) {
+            if (err)
+                console.log(err);
+            else {
+                Meteor.call('queryUpdateMarmotta', query.result.queryAttachment, function(err, results) {
+                    if (err)
+                        console.log(err);
+                });
+            }
+        });
     }, addOntology: function(onto, format) {
         this.unblock();
         // NO NEED : Client
