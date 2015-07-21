@@ -86,6 +86,8 @@ Meteor.methods({
         this.unblock();
         return HTTP.call("GET", marmottaURL+"/context/list?labels");
     }, referenceFileFolder: function(ont1, ont2, settings) {
+        this.unblock();
+
         var uriFolder1 = normaliseURItoFolderName(ont1);
         var uriFolder2 = normaliseURItoFolderName(ont2);
 
@@ -152,22 +154,41 @@ Meteor.methods({
         var onto2 = marmottaURL+"/export/download?context="+ont2+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+onto1+"&ontology="+onto2+"&binary="+binary);
     }, getAlignmentsO1O2: function(ont1, ont2) {
+        this.unblock();
         var res = Async.runSync(
                 function(done) {
                     var settings = {
                         //referenceFileBuffer: null
                     };
                     Meteor.call("referenceFileFolder", ont1, ont2, settings, function(err, results) {
-                        var res;
+                        var res = "NULL";
                         if (results.result.existed) {
                             res = results.result.folder;
+                            console.log(res);
+                            fs.stat(res+"/result.txt", function(err, stat) {
+                                if (err == null)
+                                    done(null, res+"/result.txt"); // Mapping exist -> show to client (string/JSON to visu)
+                                else
+                                    done(null, err.code);
+                            });
                         }
-                        else if (results.result.err)
-                            res = "ERROR";
-                        done(null, res);
+                        else if (results.result.err) {
+                            res = "ERROR 504";
+                            done(null, res);
+                        }
                     });
                 });
-        return res.result;
+        if (res.result.search("result.txt") == -1)
+            return "Erreur !";
+        else {
+            var resS = Async.runSync(
+                    function(done) {
+                        fs.readFile(res.result, 'utf-8', function(err, data) {
+                            done(null, data);
+                        });
+                    });
+            return resS.result;
+        }
     }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
         var res = Async.runSync(

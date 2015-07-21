@@ -22,12 +22,12 @@ function updateResultAvailable() {
     var ont2 = $('select[name=secondOnto]')[0];
     ont2 = ont2[ont2.selectedIndex].value;
 
-    var settings = {
-        //referenceFileBuffer: null
-    };
-
     Meteor.call("getAlignmentsO1O2", ont1, ont2, function(err, results) {
+        //FIXME need to be done at least 2 times at first to see anything.
         $('textarea[name=mappingResults]').val(results);
+
+        //var fileArray = results.split('\n'); // TODO : Show alignments into a visualisation template via vivagraphjs or other.
+        //And then let user edit via UI, then add them all into Marmotta/Triplestore
     });
 }
 
