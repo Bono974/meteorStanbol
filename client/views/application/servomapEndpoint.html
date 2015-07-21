@@ -33,17 +33,11 @@
         </div>
         <div class="container">
             <br/>
-            <!-- {{>alignmentResult}} -->
+             {{>alignmentResult}}
         </div>
     </div>
 </template>
 
 <template name="alignmentResult">
-    <div class>
-        <p class="collapseheader">
-            <b> Résultat de l'alignement </b>
-        </p>
-
-        <iframe src={{resultMappingFile}}></iframe><button> Télécharger </button>
-    </div>
+<textarea id="mappingResults" name="mappingResults" placeholder="Résultats des alignements" rows="10" cols="70">{{MAPPING}}</textarea>
 </template>

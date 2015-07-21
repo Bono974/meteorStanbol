@@ -58,7 +58,7 @@ function findTripleFromDoc(subject, predicate, graph, doc) {
     var enhancementGraph = docObj.enhancement[strGraph];
     var res = "";
 
-    for (var cur in enhancementGraph) {
+    for (var cur in enhancementGraph) { // FIXME : undefined...
         var tmp = enhancementGraph[cur][strEntityReference];
         if (typeof(tmp) != "undefined")
             res += subject + " " + predicate + " <" + enhancementGraph[cur][strEntityReference] + "> . ";
@@ -67,11 +67,13 @@ function findTripleFromDoc(subject, predicate, graph, doc) {
     }
 
     // Add attachment name as a triplet as well : Must be size 1, if not : retrieve for now the first attachment
-    // FIXME : WARNING /!\ : UTF8 characters are not supported for the moment
+    // FIXME : WARNING /!\ : UTF8 characters are not supported for the moment : to be verified
     var attachment = Object.keys(docObj["_attachments"]);
 
     var predicateRdfsLabel = "rdfs:label"; // Suppose the repository has a PREFIX for rdfs:<Thing>
     var attachmentTriple =  subject + " " + predicateRdfsLabel + " \""+ attachment + "\"@fr .";
+
+    console.log(attachmentTriple);
 
     return {
         res: res,
@@ -93,52 +95,79 @@ Meteor.methods({
         var res = {};
 
         // reference without extension : let uploadFileRef do it
-        fs.stat(folderTest1+"/reference.rdf", function(err, stat) {
-            if(err == null) {
-                res = {
-                    folder : folderTest1,
-                    existed : true
-                };
-                if (typeof settings.referenceFileBuffer != "undefined")
-                    uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
-                return res;
-            } else if(err.code == 'ENOENT') {
-                fs.stat(folderTest2+"/reference.rdf", function(err, stat) {
-                    if (err == null) {
-                        res = {
-                            folder : folderTest2,
-                            existed : true
-                        };
-                        if (typeof settings.referenceFileBuffer != "undefined")
-                            uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
-                        return res;
-                    } else if (err.code == 'ENOENT') {
-                        res = {
-                            folder : folderTest1,
-                            existed : false
-                        };
-                        createFolderReference(folderTest1);
+        var res = Async.runSync(function (done) {
+            fs.stat(folderTest1+"/reference.rdf", function(err, stat) {
+                if(err == null) {
+                    res = {
+                        folder : folderTest1,
+                        existed : true
+                    };
+                    if (typeof settings.referenceFileBuffer != "undefined")
+                        uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
+                    done(null, res);
+                } else if(err.code == 'ENOENT') {
+                    fs.stat(folderTest2+"/reference.rdf", function(err, stat) {
+                        if (err == null) {
+                            res = {
+                                folder : folderTest2,
+                                existed : true
+                            };
+                            if (typeof settings.referenceFileBuffer != "undefined")
+                                uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
+                            done(null, res);
+                        } else if (err.code == 'ENOENT') {
+                            res = {
+                                folder : folderTest1,
+                                existed : false
+                            };
+                            createFolderReference(folderTest1);
 
-                        if (typeof settings.referenceFileBuffer != "undefined") {
-                            createFilesFolderReference(folderTest1+"/reference", true);
-                            uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
-                        } else
-                            createFilesFolderReference(folderTest1+"/reference", false);
-                        return res;
-                    } else {
-                        console.log('Some other error: ', err.code);
-                    }
-                });
-            } else {
-                console.log('Some other error: ', err.code);
+                            if (typeof settings.referenceFileBuffer != "undefined") {
+                                createFilesFolderReference(folderTest1+"/reference", true);
+                                uploadFileRef(res.folder+"/reference", settings.referenceFileBuffer);
+                            } else
+                                createFilesFolderReference(folderTest1+"/reference", false);
+                            done(null, res);
+                        } else {
+                            console.log('Some other error: ', err.code);
+                            res = {
+                                err : err.code
+                            };
+                            done(null, res);
+                        }
+                    });
+                } else {
+                    console.log('Some other error: ', err.code);
+                    res = {
+                        err : err.code
+                    };
+                    done(null, res);
+                }
             }
-        });
-        // FIXME : find a way to send signal to Client (reference already exist)
+        )});
+        return res;
     }, align2ontos: function(ont1, ont2, binary) {
         this.unblock();
         var onto1 = marmottaURL+"/export/download?context="+ont1+"&format=application%2Frdf%2Bxml";
         var onto2 = marmottaURL+"/export/download?context="+ont2+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+onto1+"&ontology="+onto2+"&binary="+binary);
+    }, getAlignmentsO1O2: function(ont1, ont2) {
+        var res = Async.runSync(
+                function(done) {
+                    var settings = {
+                        //referenceFileBuffer: null
+                    };
+                    Meteor.call("referenceFileFolder", ont1, ont2, settings, function(err, results) {
+                        var res;
+                        if (results.result.existed) {
+                            res = results.result.folder;
+                        }
+                        else if (results.result.err)
+                            res = "ERROR";
+                        done(null, res);
+                    });
+                });
+        return res.result;
     }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
         var res = Async.runSync(

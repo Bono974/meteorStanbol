@@ -8,12 +8,27 @@ Meteor.call('getListOnto', function(error, results) {
     return ontologies;
 });
 
-function align(ont1, ont2, binary){
+function align(ont1, ont2, binary){ //TODO : binary OSGi : TODO
     Meteor.call('align2ontos', ont1, ont2, binary,
             function(error, results) {
                 console.log(results.content);
                 return results.content;
             });
+}
+
+function updateResultAvailable() {
+    var ont1 = $('select[name=firstOnto]')[0];
+    ont1 = ont1[ont1.selectedIndex].value;
+    var ont2 = $('select[name=secondOnto]')[0];
+    ont2 = ont2[ont2.selectedIndex].value;
+
+    var settings = {
+        //referenceFileBuffer: null
+    };
+
+    Meteor.call("getAlignmentsO1O2", ont1, ont2, function(err, results) {
+        $('textarea[name=mappingResults]').val(results);
+    });
 }
 
 Template.servomap.events({
@@ -48,6 +63,12 @@ Template.servomap.events({
                             align(ont1, ont2, binary);
                         });
         }
+    }, 'change select[name=firstOnto]': function(event, t) {
+        event.preventDefault();
+        updateResultAvailable();
+    }, 'change select[name=secondOnto]': function (event, t) {
+        event.preventDefault();
+        updateResultAvailable();
     }
 });
 
@@ -58,5 +79,7 @@ Template.servomap.helpers({
         var str = Session.get('listOnto');
         console.log(str);
         return str;
+    }, "MAPPING": function() {
+        return Session.get("mappingsO1O2");
     }
 });
