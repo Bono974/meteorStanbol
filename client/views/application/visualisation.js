@@ -21,6 +21,9 @@ Template.visualisation.helpers({
     },
     listPredicate: function(){
         return Session.get('listPredicates');
+    },
+    URLRessource: function() {
+        return Session.get('URLRessource');
     }
 });
 
@@ -277,8 +280,10 @@ function onLoad() {
         console.log('Mouse entered node: ' + node.id);
 
         var freeze = Session.get("freezeNodeSelection");
-        if (!freeze)
+        if (!freeze) {
             updateMetaNode(node);
+            updateRessourceURL(node);
+        }
     }).mouseLeave(function (node) {
         console.log('Mouse left node: ' + node.id);
     }).dblClick(function (node) {
@@ -413,6 +418,11 @@ function onLoad() {
                     predicates.push(results[cur].predicate.value);
             Session.set('listPredicates', predicates);
         }
+    }
+    function updateRessourceURL(node) {
+        Meteor.call('testIfRessourceFromRepo', node.id, function(err, results) {
+            Session.set('URLRessource', results);
+        });
     }
 }
 

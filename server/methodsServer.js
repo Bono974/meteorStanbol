@@ -19,6 +19,11 @@ var ressourceStore = new FS.Store.FileSystem("ressources", {
 //var hdtFilePath = "/Users/bruno/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //OSX at home
 var hdtFilePath = "/Users/bruno/export.hdt"; //OSX at home
 
+
+var graphRDF = "http://localhost:8080/marmotta/context/alignementsTests"
+var typeRessourceAnnotated = graphRDF + "#ressourceAnnotated";
+var PREFIX = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"; //TODO add more prefixes
+
 function normaliseURItoFolderName(ont) {
     var res = ont.replace(/:/g, '');
     res = res.replace(/\//g, '~');
@@ -70,15 +75,30 @@ function findTripleFromDoc(subject, predicate, graph, doc) {
     // FIXME : WARNING /!\ : UTF8 characters are not supported for the moment : to be verified
     var attachment = Object.keys(docObj["_attachments"]);
 
-    var predicateRdfsLabel = "rdfs:label"; // Suppose the repository has a PREFIX for rdfs:<Thing>
-    var attachmentTriple =  subject + " " + predicateRdfsLabel + " \""+ attachment + "\"@fr .";
+    // Suppose the repository / final query has a PREFIX for rdfs:<Thing>
+    var predicateRdfsLabel = "rdfs:label";
+    var predicateRdfsType = "rdfs:type";
+    var attachmentTriple =  subject + " " + predicateRdfsLabel + " \"" + attachment + "\"@fr .";
 
     console.log(attachmentTriple);
 
+    var typeRessource = subject + " " + predicateRdfsType + "<" + typeRessourceAnnotated + ">";
+
     return {
         res: res,
-        attachmentTriple: attachmentTriple
+        attachmentTriple: attachmentTriple,
+        typeRessource: typeRessource
     };
+}
+
+function getURLRessourceCouchDBFromEntity(entity, ressourceNonAnnotated) {
+    // FIXME : need to be more tested
+    // Consider all ressource triples begin with a #
+    var positionHashtag = entity.indexOf('#');
+    var tmp = entity.substring(positionHashtag+1, entity.length);
+    tmp = tmp.split('_');
+
+    return couchDBURL + ":" + couchDBPORT + "/" + dbRessource + "/" + tmp[0] + "/" + ressourceNonAnnotated + "?rev=" + tmp[1];
 }
 
 Meteor.methods({
@@ -234,12 +254,12 @@ Meteor.methods({
         var query = Async.runSync(
                 function(done) {
                     db.get(filename, function (err, doc) { //Doc here exist
-                        var graph = "http://tomio.dim-ub2.local:8080/marmotta/context/alignementsTests";
+                        var graph = graphRDF;
                         var subject = "<" + graph + "#" + doc._id + '_' + doc._rev + ">"; // FIXME : temporary ?
                         var predicate = "<" + graph + "#annotePar>";
                         var triples = findTripleFromDoc(subject, predicate, graph, doc);
                         //FIXME : PREFIX(es) must be a global variable
-                        var query = " PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+                        var queryEnhancements = PREFIX +
                         "INSERT DATA  " +
                         "{"+
                         "    GRAPH <"+ graph +">" +
@@ -247,7 +267,7 @@ Meteor.methods({
                                 triples.res +
                         "    }"+
                         "}";
-                        var queryAttachment = " PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
+                        var queryAttachment = PREFIX +
                         "INSERT DATA " +
                         "{"+
                         "    GRAPH <"+ graph +">" +
@@ -255,23 +275,72 @@ Meteor.methods({
                                 triples.attachmentTriple +
                         "    }"+
                         "}";
+                        "}";
+                        var queryType = PREFIX +
+                        "INSERT DATA " +
+                        "{"+
+                        "    GRAPH <"+ graph +">" +
+                        "    {"+
+                                triples.typeRessource +
+                        "    }"+
+                        "}";
+
                         var res = {
-                            queryEnhancements: query,
-                            queryAttachment: queryAttachment
+                            queryEnhancements: queryEnhancements,
+                            queryAttachment: queryAttachment,
+                            queryType: queryType
                         };
                         done(null, res);
                     })
                 });
         Meteor.call('queryUpdateMarmotta', query.result.queryEnhancements, function(err, results) {
-            if (err)
-                console.log(err);
+            if (err) console.log(err);
             else {
                 Meteor.call('queryUpdateMarmotta', query.result.queryAttachment, function(err, results) {
-                    if (err)
-                        console.log(err);
+                    if (err) console.log(err);
+                    else {
+                        Meteor.call('queryUpdateMarmotta', query.result.queryType, function(err, results) {
+                            if (err) console.log(err);
+                        });
+                    }
                 });
             }
         });
+    }, testIfRessourceFromRepo: function(entity) {
+        this.unblock();
+
+        var queryType = PREFIX +
+                        "SELECT *"+
+                        "WHERE {"+
+                            "<" + entity + "> rdfs:type ?object"+
+                        "}";
+        var queryLabel = PREFIX +
+                        "SELECT *"+
+                        "WHERE {"+
+                            "<" + entity + "> rdfs:label ?object"+
+                        "}";
+        var res = Async.runSync(
+                function(done) {
+                    Meteor.call('querySelectMarmotta', queryType, function(err, results) {
+                        var res = results.results.bindings;
+                        if (typeof(res[0]) != "undefined")
+                            if (typeof(res[0].object) != "undefined")
+                                if (res[0].object.value === typeRessourceAnnotated) {
+
+                                    Meteor.call('querySelectMarmotta', queryLabel, function(err, results) {
+                                        var res = results.results.bindings;
+                                        var ressourceNonAnnotated = res[0].object.value;
+                                        var urlRessource = getURLRessourceCouchDBFromEntity(entity, ressourceNonAnnotated);
+
+                                        done(null, urlRessource);
+                                        return;
+                                    });
+                                    return;
+                                }
+                        done(null, "N'est pas une ressource");
+                    });
+                });
+        return res.result;
     }, addOntology: function(onto, format) {
         this.unblock();
         // NO NEED : Client

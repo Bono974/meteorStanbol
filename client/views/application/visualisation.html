@@ -76,6 +76,13 @@
     top: 50%;
     z-index: 99999;
 }
+#URLRessource {
+    margin: 50px;
+    position: fixed;
+    left: 0;
+    top: 70%;
+    z-index: 99999;
+}
 </style>
 <div id=selectSPARQL>
     Visualisation <br/>
@@ -102,6 +109,7 @@
 <button id="keepSelection"> Keep selection ? </button>
 
 <textarea id="tmpMetaMode" name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea>
+<input type="text" id="URLRessource" name="URLRessource" value={{URLRessource}} size="72">
 
 {{>visuSPARQL}}
 </template>
