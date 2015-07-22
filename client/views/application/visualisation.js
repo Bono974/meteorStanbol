@@ -3,7 +3,7 @@ var colorSelected       = 0xFFA500ff;
 var colorNonSelected = 0x009ee8;
 QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
-Template.visuSPARQL.rendered = function() {
+Template.visuVivaGraphGlobal.rendered = function() {
     onLoad();
 };
 

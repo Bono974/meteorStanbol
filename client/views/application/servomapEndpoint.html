@@ -1,42 +1,63 @@
 <template name="servomap">
-    <div id=main>
-        <div class="container">
-            <div class="row main-row">
-                <div class="8u 12u(mobile)">
-                    <section>
-                        Choisissez deux ontologies à aligner : <br/> <br/>
-                        <form action="" name='align2ontos' class="align2ontos">
-                           <select name="firstOnto" class="firstOnto">
+<style type='text/css'>
+#graph-container {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    overflow: hidden;
+}
+.graph-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: none;
+    margin: 100px 30px;
+}
+.graph-selection-indicator {
+    position: fixed;
+    background: transparent;
+    border: 1px solid blue;
+}
+</style>
+
+<div id=main>
+    <div class="container">
+        <div class="row main-row">
+            <div class="8u 12u(mobile)">
+                <section>
+                    Choisissez deux ontologies à aligner : <br/> <br/>
+                    <form action="" name='align2ontos' class="align2ontos">
+                        <select name="firstOnto" class="firstOnto">
                             {{#each listOntos}}
-                                <option value={{.}}> {{.}} </option>
+                            <option value={{.}}> {{.}} </option>
                             {{/each}}
-                            </select> <br/>
-                            <select name="secondOnto" class="secondOnto">
+                        </select> <br/>
+                        <select name="secondOnto" class="secondOnto">
                             {{#each listOntos}}
-                                <option value={{.}}> {{.}} </option>
+                            <option value={{.}}> {{.}} </option>
                             {{/each}}
-                            </select>
-                            <input type="checkbox" name="binary" class="binary"> Indexation binaire (dummy : TODO) <br/> <br/>
-                            Fichier de référence [Optionnel]   <input type=file name="referenceFile"> <br/>
-                            <button type=submit value="align"> Aligner via ServOMap</button>
-                        </form>
-                    </section>
-                </div>
-                <div class="4u 12u(mobile)">
-                    {{> metadata}}
-                    <section>
-                        Fichier d'alignement/reference à insérer directement dans le repository (XML, RDF, ..): <br/>
-                        <input type=file> <button type=submit> Charger </button>
-                    </section>
-                </div>
+                        </select>
+                        <input type="checkbox" name="binary" class="binary"> Indexation binaire (dummy : TODO) <br/> <br/>
+                        Fichier de référence [Optionnel]   <input type=file name="referenceFile"> <br/>
+                        <button type=submit value="align"> Aligner via ServOMap</button>
+                    </form>
+                </section>
+            </div>
+            <div class="4u 12u(mobile)">
+                {{>alignmentResult}}
+                <button value="visualiseMappings"> Visualiser / éditer ces alignements </button>
             </div>
         </div>
-        <div class="container">
-            <br/> {{>alignmentResult}}
-        </div>
     </div>
+    {{>visuVivaGraphMappings}}
+</div>
 </template>
 
 <template name="alignmentResult">
 <textarea id="mappingResults" name="mappingResults" placeholder="Résultats des alignements" rows="20" cols="70">{{MAPPING}}</textarea>
+</template>
+
+<template name="visuVivaGraphMappings">
+<div id="graph-container"></div>
+<div class="graph-overlay"></div>
 </template>
