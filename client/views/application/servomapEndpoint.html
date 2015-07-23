@@ -1,25 +1,20 @@
 <template name="servomap">
 <style type='text/css'>
-#graph-container {
+html, body, #graph-container > svg {width: 100%,; height: 100%;}
+#graph-container > svg{
     height: 100%;
     width: 100%;
     position: absolute;
     overflow: hidden;
 }
-.graph-overlay {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    display: none;
-    margin: 100px 30px;
-}
-.graph-selection-indicator {
+#toggleRender {
+    margin: 50px;
     position: fixed;
-    background: transparent;
-    border: 1px solid blue;
+    left: 0 ;
+    top: 4%;
+    z-index: 99999;
 }
 </style>
-
 <div id=main>
     <div class="container">
         <div class="row main-row">
@@ -28,7 +23,7 @@
                     Choisissez deux ontologies à aligner : <br/> <br/>
                     <form action="" name='align2ontos' class="align2ontos">
                         <select name="firstOnto" class="firstOnto">
-                            {{#each listOntos}}
+                        {{#each listOntos}}
                             <option value={{.}}> {{.}} </option>
                             {{/each}}
                         </select> <br/>
@@ -58,6 +53,7 @@
 </template>
 
 <template name="visuVivaGraphMappings">
+<button id="toggleRender" value="pause">Pause render</button>
 <div id="graph-container"></div>
 <div class="graph-overlay"></div>
 </template>

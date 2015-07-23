@@ -1,6 +1,5 @@
 var colorSelected       = 0xFFA500ff;
-//var colorNonSelected    = 0x009ee8ff;
-var colorNonSelected = 0x009ee8;
+var colorNonSelected    = 0x009ee8;
 QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
 Template.visuVivaGraphGlobal.rendered = function() {
@@ -43,6 +42,9 @@ Template.visualisation.events({
                 }
                 loadNewGraph(settings);
                 console.log(settings);
+
+
+
             });
         } else if(sparqlChooser2) {
             Meteor.call('querySelectFuseki', query, function(errors, results) {
@@ -272,6 +274,8 @@ function onLoad() {
     App.renderer = Viva.Graph.View.renderer(App.graph, {
         layout: App.layout, // FIXME
         graphics: App.graphics,
+        renderLinks: true,
+        prerender: true,
         container: document.getElementById('graph-container')
     });
 
@@ -348,6 +352,7 @@ function onLoad() {
             // for now : temporary button to 'release' the selection
             var current  = Session.get("currentNodeSelected");
             updateMetaNode(node);
+            updateRessourceURL(node);
             uncheckNode(node);
             if (typeof(current) != "undefined" && currentNodeColor != colorSelected)
                 setNodeColor(current, colorNonSelected);
@@ -493,6 +498,22 @@ function loadNewGraph(settings) {
     App.graph.clear();
     var newGraph = newGraphFromDataset(settings);
     copyGraph(newGraph, App.graph);
+
+    //precompute(5000);
+
+    function precompute(iterations) {
+        var i = 0;
+        while(iterations > 0 && i <10) {
+            App.layout.step();
+            iterations--;
+            i++;
+        }
+        if (iterations > 0) {
+            setTimeout(function(){
+                precompute(iterations);
+            }, 0);
+        }
+    }
 }
 function extendGraph(settings) {
     newGraphFromDataset(settings);
