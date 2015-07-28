@@ -33,6 +33,24 @@ function generateUID(separator) {
     return (S4() + S4() + delim + S4() + delim + S4() + delim + S4() + S4() + S4());
 }
 
+function xsdDateTime() {
+    var date = new Date();
+
+    var yyyy    = date.getFullYear();
+    var mm1     = pad(date.getMonth()+1);
+    var dd      = pad(date.getDate());
+    var hh      = pad(date.getHours());
+    var mm2     = pad(date.getMinutes());
+    var ss      = pad(date.getSeconds());
+
+    function pad(n) {
+        var s = n.toString();
+        return s.length < 2 ? '0'+s : s;
+    }
+
+    return yyyy + '-' + mm1 + '-' + dd + 'T' + hh + ':' + mm2 + ':' + ss;
+}
+
 function normaliseURItoFolderName(ont) {
     var res = ont.replace(/:/g, '');
     res = res.replace(/\//g, '~');
@@ -225,45 +243,54 @@ Meteor.methods({
     }, putAlignmentsO1O2: function(ont1, ont2, settings){
         // put full result.txt into Marmotta
         // FIXME TODO : choose a good name for ont1/ont2 contexts
+        // TODO : test if alignments are already in repository (versionning ?)
         this.unblock();
 
-            console.log("TEST 1");
+        console.log("TEST 1");
         Meteor.call('getAlignmentsO1O2', ont1, ont2, true, function(err, results) {
             console.log(results);
             if (results.search("result.txt") == -1) // No result file
                 return;
 
             console.log("TEST 2");
-            var graph = graphRDFMapping;
-            var author = settings.author;
-            var tool = settings.tool; // ServOMap / LogMap / Manual
-            var authorID = author; // For now ?
-            var onto1ID = "<" + ont1 + ">"; // For now ?
-            var onto2ID = "<" + ont2 + ">"; // For now ?
-            var onto1URI = ont1;
-            var onto2URI = ont2;
-            var alignmentID = "alignment_" + ont1 + "_" + ont2;
-            var alignmentURI = "<" + graph + "#" + alignmentID + ">";
-            var authorURI = "<" + graph + "#" + authorID + ">";
+
+            var resultFile = results;
+
+            var date            = xsdDateTime();
+            var graph           = graphRDFMapping;
+            var author          = settings.author;
+            var tool            = settings.tool; // ServOMap / LogMap / Manual
+            var authorID        = author; // For now ?
+            var onto1ID         = "<" + ont1 + ">"; // For now ?
+            var onto2ID         = "<" + ont2 + ">"; // For now ?
+            var onto1URI        = ont1;
+            var onto2URI        = ont2;
+            var alignmentID     = "alignment_" + ont1 + "_" + ont2;
+            var alignmentURI    = "<" + graph + "#" + alignmentID + ">";
+            var authorURI       = "<" + graph + "#" + authorID + ">";
+
+            var triples1 =      authorURI + " rdfs:subClassOf align:Agent ." +
+                                authorURI + " rdfs:label \""+ author + "\" . " +
+                                alignmentURI + " rdfs:subClassOf align:Alignment ." +
+                                alignmentURI + " align:has_author " + authorURI + " . " +
+                                alignmentURI + " align:has_tool align:" + tool + " . " +
+                                onto1ID + " rdfs:subClassOf align:Ontology ." +
+                                onto2ID + " rdfs:subClassOf align:Ontology ." +
+                                onto1ID + " align:has_location \"" + onto1URI + "\" . " +
+                                onto2ID + " align:has_location \"" + onto2URI + "\" . " +
+
+                                onto1ID + " align:has_alignment "+ alignmentURI + " ." +
+                                onto2ID + " align:has_alignment "+ alignmentURI + " ." +
+                                alignmentURI + " align:tool_date \"" + date +  "\"^^xsd:dateTime . ";
+
             var query1 =
                 "PREFIX align:<" + graph + "#> "+
                 " INSERT DATA {" +
-                "	GRAPH <" + graph + "> {" +
-                "		" + authorURI + " rdfs:subClassOf align:Agent ." +
-                "		" + authorURI + " rdfs:label \""+ author + "\" . " +
-                "		" + alignmentURI + " rdfs:subClassOf align:Alignment ." +
-                "		" + alignmentURI + " align:has_author " + authorURI + " ." +
-                "		" + alignmentURI + " align:has_tool align:" + tool + " . " +
-                "		" + onto1ID + " rdfs:subClassOf align:Ontology ." +
-                "		" + onto2ID + " rdfs:subClassOf align:Ontology ." +
-                "		" + onto1ID + " align:has_location \"" + onto1URI + "\" . " +
-                "		" + onto2ID + " align:has_location \"" + onto2URI + "\" . " +
-                "		" + onto1ID + " align:has_alignment "+ alignmentURI + " .";
-                "		" + onto2ID + " align:has_alignment "+ alignmentURI + " .";
-                "	}" +
+                "	GRAPH <" + graph + "> " +
+                    "{" +
+                        triples1 +
+                    "}"+
                 "}";
-
-            var resultFile = results;
             var res = Async.runSync(
                     function(done) {
                         fs.readFile(resultFile, 'utf-8', function(err,data) {
@@ -286,21 +313,28 @@ Meteor.methods({
                                 e1 = "<" + e1 + ">";
                                 e2 = "<" + e2 + ">";
 
-                                var uriMappingID = "<" + graph + "#" + mappingID + ">";
-                                var uriAlignmentID = "<" + graph + "#" + alignmentID + ">";
+                                var mappingURI = "<" + graph + "#" + mappingID + ">";
 
-                                triples += uriAlignmentID   + " align:has_mapping "     + uriMappingID + " . ";
-                                triples += uriMappingID     + " rdfs:subClassOf "       + " align:Mapping . ";
-                                triples += uriMappingID     + " align:has_entity1 "     + e1 + " . ";
-                                triples += uriMappingID     + " align:has_entity2 "     + e2 + " . ";
-                                triples += uriMappingID     + " align:has_relation "    + relation + " . ";
-                                triples += uriMappingID     + " align:has_measure \""   + measure + "\" . ";
+                                //triples += alignmentURI   + " align:has_mapping "     + mappingURI + " . ";
+                                //triples += mappingURI     + " rdfs:subClassOf "       + " align:Mapping . ";
+                                triples += mappingURI     + " align:has_entity1 "     + e1 + " . ";
+                                triples += mappingURI     + " align:has_entity2 "     + e2 + " . ";
+                                //triples += mappingURI     + " align:has_relation "    + relation + " . ";
+                                //triples += mappingURI     + " align:has_measure \""   + measure + "\" . ";
+
+
+                                //triples += e1 + " rdfs:subClassOf align:Entity . ";
+                                //triples += e2 + " rdfs:subClassOf align:Entity . ";
+                                //triples += mappingURI     + " align:has_author " + authorURI  + " . ";
+                                //triples += mappingURI     + " align:human_validation \"false\" . ";
+                                //triples += mappingURI     + " align:validation_date \"" + date +  "\"^^xsd:dateTime . ";
                             }
                             done(null, triples);
                         })
                     });
             var triples = res.result;
-            console.log(triples);
+            //console.log(query1);
+            //console.log(triples);
 
             var query2 =
                 "PREFIX align:<" + graph + "#> " +
@@ -312,13 +346,32 @@ Meteor.methods({
                 "}";
 
             //console.log(query2);
-            Meteor.call('queryUpdateMarmotta', query1, function(err, results) {
-                if (err) console.log(err);
-                else
-                    Meteor.call('queryUpdateMarmotta', query2, function(err, results) {
-                        if (err) console.log(err);
-                    });
-            });
+            //try {
+            //    var titi = Async.runSync(
+            //            function(done) {
+            //                console.log("Header incoming");
+            //                Meteor.call('queryUpdateMarmotta', query1, function(err, results) {
+            //                    console.log("Header added");
+            //                    if (err) console.log(err);
+            //                    done(null, 'titi');
+            //                });
+            //            });
+            //} catch (e) {
+            //    console.log(e.message);
+            //}
+            try {
+                var toto = Async.runSync(
+                        function(done) {
+                            console.log("Triples incoming");
+                            Meteor.call('queryUpdateMarmotta', query2, function(err, results) {
+                                console.log("Triples added");
+                                if (err) console.log(err);
+                                done(null, 'toto');
+                            });
+                        });
+            } catch(e) {
+                console.log(e.message);
+            }
         });
     }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
