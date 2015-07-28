@@ -2,5 +2,11 @@
     "form-data" : "1.0.0-rc1",
     "requirejs" : "2.1.18",
     "sparql-client" : "0.2.0",
-    "hdt" : "1.2.1"
+    "hdt" : "1.2.1",
+    "ngraph.graph" : "0.0.11",
+    "ngraph.pixel": "0.1.13",
+    "ngraph.events": "0.0.3",
+    "pixel.layout": "0.1.1",
+    "config.pixel": "0.1.4",
+    "config.layout": "0.1.2"
 }

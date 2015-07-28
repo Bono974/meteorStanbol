@@ -2,9 +2,90 @@ var colorSelected       = 0xFFA500ff;
 var colorNonSelected    = 0x009ee8;
 QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
+var App = {};
+
 Template.visuVivaGraphGlobal.rendered = function() {
-    onLoad();
+    //onLoad();
+    pixelOnLoad();
 };
+
+function pixelOnLoad() {
+    App.graph = ngraphgraph();
+    console.log(App.graph);
+
+    App.graph.addLink(1,2);
+
+    var pixelRender = ngraphpixel;
+    App.renderer = pixelRender(App.graph, {
+        settings: true
+    });
+
+    App.addCurrentNodeSettings = createNodeSettings;
+    App.settingsView = configpixel(App.renderer);
+    App.gui = App.settingsView.gui();
+    App.nodeSettings = App.addCurrentNodeSettings(App.gui, App.renderer);
+
+    App.renderer.on('nodeClick', showNodeDetails);
+
+    console.log(App.renderer);
+}
+
+
+function showNodeDetails(node) {
+    App.nodeSettings.id = node.id;
+    App.nodeSettings.color = App.renderer.nodeColor(node.id);
+    App.nodeSettings.size = App.renderer.nodeSize(node.id);
+
+    var layout = App.renderer.layout();
+    if (layout && layout.pinNode) {
+        App.nodeSettings.isPinned = layout.pinNode(node.id);
+    }
+    App.gui.update();
+}
+
+function createNodeSettings(gui, renderer) {
+    var nodeSettings = gui.addFolder('Current Node');
+    var currentNode = {
+        id: '',
+        color: 0,
+        size: 0,
+        isPinned: false
+    };
+
+    nodeSettings.add(currentNode,'id');
+    nodeSettings.addColor(currentNode, 'color').onChange(setColor);
+    nodeSettings.add(currentNode, 'size', 0, 200).onChange(setSize);
+    nodeSettings.add(currentNode, 'isPinned').onChange(setPinned);
+
+    return currentNode;
+
+    function setColor(){
+        if (currentNode.id) {
+            renderer.nodeColor(currentNode.id, currentNode.color);
+            renderer.focus();
+        }
+    }
+
+    function setSize() {
+        if (currentNode.id) {
+            renderer.nodeSize(currentNode.id, currentNode.size);
+            renderer.focus();
+        }
+    }
+
+    function setPinned() {
+        if (!currentNode.id) return;
+
+        var layout = renderer.layout();
+        if (layout.pinNode) {
+            layout.pinNode(currentNode.id, currentNode.isPinned);
+        } else {
+            currentNode.isPinned = false;
+            gui.update();
+        }
+        renderer.focus();
+    }
+}
 
 Template.visualisation.helpers({
     queryResult: function () {
@@ -149,6 +230,7 @@ function filterResultByURI(subject, object) { //don't care about order
 }
 
 function newGraphFromDataset(settings){
+    var i = 0;
     var dataset = settings.dataset;
     var root = settings.root;
 
@@ -168,6 +250,7 @@ function newGraphFromDataset(settings){
                     if (filterResultByURI(object)) {
                         resG.addNode(object);
                         resG.addLink(root, object);
+                        i++;
                     }
                 }
             else {
@@ -192,7 +275,10 @@ function newGraphFromDataset(settings){
                     var object = dataset[cur].object.value;
                     if (filterResultByURI(subject, object)) {
                         resG.addNode(object);
+                        resG.addNode(subject);
                         resG.addLink(subject, object);
+                        i++;
+                        i++;
                     }
                 }
             else {
@@ -204,6 +290,7 @@ function newGraphFromDataset(settings){
                     if (filterResultByURI(subject, object)) {
                         resG.addNode(object);
                         resG.addLink(tmpSubject, object);
+                        i++;
                     }
                 }
             }
@@ -217,6 +304,7 @@ function newGraphFromDataset(settings){
                     if (filterResultByURI(subject)) {
                         resG.addNode(subject);
                         resG.addLink(tmpObject, subject);
+                        i++;
                     }
                 }
             } else {
@@ -232,10 +320,11 @@ function newGraphFromDataset(settings){
         //resG.addNode('ROOT');
         //resG.addLink(root, 'ROOT');
     }
+    console.log(i);
     return resG;
 }
 
-var App = {};
+
 
 function onLoad() {
     App.graphGenerator = Viva.Graph.generator();
@@ -499,19 +588,23 @@ function loadNewGraph(settings) {
     var newGraph = newGraphFromDataset(settings);
     copyGraph(newGraph, App.graph);
 
-    //precompute(5000);
+    console.log(App.renderer.layout());
+    precompute(5000);
+    App.renderer.focus();
+    //App.renderer.autofit();
 
     function precompute(iterations) {
         var i = 0;
-        while(iterations > 0 && i <10) {
-            App.layout.step();
+        while(iterations > 0 && i <40) {
+            App.renderer.layout().step();
             iterations--;
             i++;
         }
         if (iterations > 0) {
-            setTimeout(function(){
-                precompute(iterations);
-            }, 0);
+            if (!App.renderer.stable())
+                setTimeout(function(){
+                    precompute(iterations);
+                }, 0);
         }
     }
 }

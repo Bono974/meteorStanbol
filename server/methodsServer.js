@@ -20,9 +20,18 @@ var ressourceStore = new FS.Store.FileSystem("ressources", {
 var hdtFilePath = "/Users/bruno/export.hdt"; //OSX at home
 
 
-var graphRDF = "http://localhost:8080/marmotta/context/alignementsTests"
-var typeRessourceAnnotated = graphRDF + "#ressourceAnnotated";
+var graphRDFMapping = "http://alignmentsGraph";
+var graphRDFAnnotation = "http://localhost:8080/marmotta/context/alignementsTests"
+var typeRessourceAnnotated = graphRDFAnnotation + "#ressourceAnnotated";
 var PREFIX = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"; //TODO add more prefixes
+
+function generateUID(separator) {
+    var delim = separator || "-";
+    function S4() {
+        return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+    }
+    return (S4() + S4() + delim + S4() + delim + S4() + delim + S4() + S4() + S4());
+}
 
 function normaliseURItoFolderName(ont) {
     var res = ont.replace(/:/g, '');
@@ -173,7 +182,7 @@ Meteor.methods({
         var onto1 = marmottaURL+"/export/download?context="+ont1+"&format=application%2Frdf%2Bxml";
         var onto2 = marmottaURL+"/export/download?context="+ont2+"&format=application%2Frdf%2Bxml";
         return HTTP.call("GET", stanbolURL+"/servomap/align/?ontology="+onto1+"&ontology="+onto2+"&binary="+binary);
-    }, getAlignmentsO1O2: function(ont1, ont2) {
+    }, getAlignmentsO1O2: function(ont1, ont2, bool) {
         this.unblock();
         var res = Async.runSync(
                 function(done) {
@@ -198,6 +207,10 @@ Meteor.methods({
                         }
                     });
                 });
+
+        if (typeof(bool) != "undefined") // --> See putAlignmentsO1O2
+            return res.result;
+
         if (res.result.search("result.txt") == -1)
             return "Erreur !";
         else {
@@ -209,6 +222,104 @@ Meteor.methods({
                     });
             return resS.result;
         }
+    }, putAlignmentsO1O2: function(ont1, ont2, settings){
+        // put full result.txt into Marmotta
+        // FIXME TODO : choose a good name for ont1/ont2 contexts
+        this.unblock();
+
+            console.log("TEST 1");
+        Meteor.call('getAlignmentsO1O2', ont1, ont2, true, function(err, results) {
+            console.log(results);
+            if (results.search("result.txt") == -1) // No result file
+                return;
+
+            console.log("TEST 2");
+            var graph = graphRDFMapping;
+            var author = settings.author;
+            var tool = settings.tool; // ServOMap / LogMap / Manual
+            var authorID = author; // For now ?
+            var onto1ID = "<" + ont1 + ">"; // For now ?
+            var onto2ID = "<" + ont2 + ">"; // For now ?
+            var onto1URI = ont1;
+            var onto2URI = ont2;
+            var alignmentID = "alignment_" + ont1 + "_" + ont2;
+            var alignmentURI = "<" + graph + "#" + alignmentID + ">";
+            var authorURI = "<" + graph + "#" + authorID + ">";
+            var query1 =
+                "PREFIX align:<" + graph + "#> "+
+                " INSERT DATA {" +
+                "	GRAPH <" + graph + "> {" +
+                "		" + authorURI + " rdfs:subClassOf align:Agent ." +
+                "		" + authorURI + " rdfs:label \""+ author + "\" . " +
+                "		" + alignmentURI + " rdfs:subClassOf align:Alignment ." +
+                "		" + alignmentURI + " align:has_author " + authorURI + " ." +
+                "		" + alignmentURI + " align:has_tool align:" + tool + " . " +
+                "		" + onto1ID + " rdfs:subClassOf align:Ontology ." +
+                "		" + onto2ID + " rdfs:subClassOf align:Ontology ." +
+                "		" + onto1ID + " align:has_location \"" + onto1URI + "\" . " +
+                "		" + onto2ID + " align:has_location \"" + onto2URI + "\" . " +
+                "		" + onto1ID + " align:has_alignment "+ alignmentURI + " .";
+                "		" + onto2ID + " align:has_alignment "+ alignmentURI + " .";
+                "	}" +
+                "}";
+
+            var resultFile = results;
+            var res = Async.runSync(
+                    function(done) {
+                        fs.readFile(resultFile, 'utf-8', function(err,data) {
+                            var triples = "";
+                            var fileArray = data.split('\n');
+                            for (var cur in fileArray) {
+                                var currentMapping = fileArray[cur].split(';');
+
+                                var e1 = currentMapping[0];
+                                var e2 = currentMapping[1];
+
+                                if (e1 === "" || e2 === "")
+                                    continue;
+
+                                var relation = " align:Equivalent "; //for now : "align:Equivalent"
+                                var measure = currentMapping[2];
+
+                                var mappingID = generateUID(); //e1 + e2;
+
+                                e1 = "<" + e1 + ">";
+                                e2 = "<" + e2 + ">";
+
+                                var uriMappingID = "<" + graph + "#" + mappingID + ">";
+                                var uriAlignmentID = "<" + graph + "#" + alignmentID + ">";
+
+                                triples += uriAlignmentID   + " align:has_mapping "     + uriMappingID + " . ";
+                                triples += uriMappingID     + " rdfs:subClassOf "       + " align:Mapping . ";
+                                triples += uriMappingID     + " align:has_entity1 "     + e1 + " . ";
+                                triples += uriMappingID     + " align:has_entity2 "     + e2 + " . ";
+                                triples += uriMappingID     + " align:has_relation "    + relation + " . ";
+                                triples += uriMappingID     + " align:has_measure \""   + measure + "\" . ";
+                            }
+                            done(null, triples);
+                        })
+                    });
+            var triples = res.result;
+            console.log(triples);
+
+            var query2 =
+                "PREFIX align:<" + graph + "#> " +
+                " INSERT DATA {" +
+                "   GRAPH <" + graph + ">" +
+                "   {" +
+                        triples +
+                "   }" +
+                "}";
+
+            //console.log(query2);
+            Meteor.call('queryUpdateMarmotta', query1, function(err, results) {
+                if (err) console.log(err);
+                else
+                    Meteor.call('queryUpdateMarmotta', query2, function(err, results) {
+                        if (err) console.log(err);
+                    });
+            });
+        });
     }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
         var res = Async.runSync(
@@ -254,7 +365,7 @@ Meteor.methods({
         var query = Async.runSync(
                 function(done) {
                     db.get(filename, function (err, doc) { //Doc here exist
-                        var graph = graphRDF;
+                        var graph = graphRDFAnnotation;
                         var subject = "<" + graph + "#" + doc._id + '_' + doc._rev + ">"; // FIXME : temporary ?
                         var predicate = "<" + graph + "#annotePar>";
                         var triples = findTripleFromDoc(subject, predicate, graph, doc);
@@ -274,7 +385,6 @@ Meteor.methods({
                         "    {"+
                                 triples.attachmentTriple +
                         "    }"+
-                        "}";
                         "}";
                         var queryType = PREFIX +
                         "INSERT DATA " +

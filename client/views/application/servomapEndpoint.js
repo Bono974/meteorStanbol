@@ -35,6 +35,23 @@ function updateResultAvailable() {
         //console.log(fileArray);
     });
 }
+function confirmMappings() {
+    var ont1 = $('select[name=firstOnto]')[0];
+    ont1 = ont1[ont1.selectedIndex].value;
+    var ont2 = $('select[name=secondOnto]')[0];
+    ont2 = ont2[ont2.selectedIndex].value;
+
+    var settings = {
+        author:"Bruno",
+        tool:"ServOMap"
+    };
+
+    console.log("EN COURS");
+
+    Meteor.call("putAlignmentsO1O2", ont1, ont2, settings, function(err, results) {
+        console.log("DONE");
+    });
+}
 
 function newGraphFromDataset(settings) {
     var array = settings; // for now ?
@@ -98,6 +115,9 @@ Template.servomap.events({
     }, 'click button[value=visualiseMappings]': function(event, t) {
         event.preventDefault();
         loadNewGraph(Session.get('mappings'));
+    }, "click button[value=putMappings]":function(event, t) {
+        event.preventDefault();
+        confirmMappings();
     }, "click button[id=toggleRender]":function() {
         if ($('#toggleRender')[0].value == "pause") {
             $('#toggleRender')[0].value = 'resume';
