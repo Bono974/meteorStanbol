@@ -249,155 +249,125 @@ Meteor.methods({
         console.log("TEST 1");
         var res = Async.runSync(
                 function(done) {
-        Meteor.call('getAlignmentsO1O2', ont1, ont2, true, function(err, results) {
-            console.log(results);
-            if (results.search("result.txt") == -1) // No result file
-                return;
+                    Meteor.call('getAlignmentsO1O2', ont1, ont2, true, function(err, results) {
+                        console.log(results);
+                        if (results.search("result.txt") == -1) // No result file
+                            return;
 
-            console.log("TEST 2");
+                        console.log("TEST 2");
 
-            var resultFile = results;
+                        var resultFile = results;
 
-            var date            = xsdDateTime();
-            var graph           = graphRDFMapping;
-            var author          = settings.author;
-            var tool            = settings.tool; // ServOMap / LogMap / Manual
-            var authorID        = author; // For now ?
-            var onto1ID         = "<" + ont1 + ">"; // For now ?
-            var onto2ID         = "<" + ont2 + ">"; // For now ?
-            var onto1URI        = ont1;
-            var onto2URI        = ont2;
-            var alignmentID     = "alignment_" + ont1 + "_" + ont2;
-            var alignmentURI    = "<" + graph + "#" + alignmentID + ">";
-            var authorURI       = "<" + graph + "#" + authorID + ">";
+                        var date            = xsdDateTime();
+                        var graph           = graphRDFMapping;
+                        var author          = settings.author;
+                        var tool            = settings.tool; // ServOMap / LogMap / Manual
+                        var authorID        = author; // For now ?
+                        var onto1ID         = "<" + ont1 + ">"; // For now ?
+                        var onto2ID         = "<" + ont2 + ">"; // For now ?
+                        var onto1URI        = ont1;
+                        var onto2URI        = ont2;
+                        var alignmentID     = "alignment_" + ont1 + "_" + ont2;
+                        var alignmentURI    = "<" + graph + "#" + alignmentID + ">";
+                        var authorURI       = "<" + graph + "#" + authorID + ">";
 
-            var triples1 =      authorURI + " rdfs:subClassOf align:Agent ." +
-                                authorURI + " rdfs:label \""+ author + "\" . " +
-                                alignmentURI + " rdfs:subClassOf align:Alignment ." +
-                                alignmentURI + " align:has_author " + authorURI + " . " +
-                                alignmentURI + " align:has_tool align:" + tool + " . " +
-                                onto1ID + " rdfs:subClassOf align:Ontology ." +
-                                onto2ID + " rdfs:subClassOf align:Ontology ." +
-                                onto1ID + " align:has_location \"" + onto1URI + "\" . " +
-                                onto2ID + " align:has_location \"" + onto2URI + "\" . " +
+                        var triples1 =      authorURI + " rdfs:subClassOf align:Agent ." +
+                                            authorURI + " rdfs:label \""+ author + "\" . " +
+                                            alignmentURI + " rdfs:subClassOf align:Alignment ." +
+                                            alignmentURI + " align:has_author " + authorURI + " . " +
+                                            alignmentURI + " align:has_tool align:" + tool + " . " +
+                                            onto1ID + " rdfs:subClassOf align:Ontology ." +
+                                            onto2ID + " rdfs:subClassOf align:Ontology ." +
+                                            onto1ID + " align:has_location \"" + onto1URI + "\" . " +
+                                            onto2ID + " align:has_location \"" + onto2URI + "\" . " +
 
-                                onto1ID + " align:has_alignment "+ alignmentURI + " ." +
-                                onto2ID + " align:has_alignment "+ alignmentURI + " ." +
-                                alignmentURI + " align:tool_date \"" + date +  "\"^^xsd:dateTime . ";
+                                            onto1ID + " align:has_alignment "+ alignmentURI + " ." +
+                                            onto2ID + " align:has_alignment "+ alignmentURI + " ." +
+                                            alignmentURI + " align:tool_date \"" + date +  "\"^^xsd:dateTime . ";
 
-            var queryHeader =
-                "PREFIX align:<" + graph + "#> "+
-                " INSERT DATA {" +
-                "	GRAPH <" + graph + "> " +
-                    "{" +
-                        triples1 +
-                    "}"+
-                "}";
-            var res = Async.runSync(
-                    function(done) {
-                        fs.readFile(resultFile, 'utf-8', function(err,data) {
-                            var triplesArray = [""];
-                            var i = 0;
+                        var queryHeader =
+                            "PREFIX align:<" + graph + "#> "+
+                            " INSERT DATA {" +
+                            "	GRAPH <" + graph + "> " +
+                            "{" +
+                            triples1 +
+                            "}"+
+                            "}";
+                        var res = Async.runSync(
+                                function(done) {
+                                    fs.readFile(resultFile, 'utf-8', function(err,data) {
+                                        var triplesArray = [""];
+                                        var i = 0;
 
-                            var fileArray = data.split('\n');
-                            for (var cur in fileArray) {
-                                var currentMapping = fileArray[cur].split(';');
+                                        var fileArray = data.split('\n');
+                                        for (var cur in fileArray) {
+                                            var currentMapping = fileArray[cur].split(';');
 
-                                var e1 = currentMapping[0];
-                                var e2 = currentMapping[1];
+                                            var e1 = currentMapping[0];
+                                            var e2 = currentMapping[1];
 
-                                if (e1 === "" || e2 === "")
-                                    continue;
+                                            if (e1 === "" || e2 === "")
+                                                continue;
 
-                                var relation = " align:Equivalent "; //for now : "align:Equivalent"
-                                var measure = currentMapping[2];
+                                            var relation = " align:Equivalent "; //for now : "align:Equivalent"
+                                            var measure = currentMapping[2];
 
-                                var mappingID = generateUID(); //e1 + e2;
+                                            var mappingID = generateUID(); //e1 + e2;
 
-                                e1 = "<" + e1 + ">";
-                                e2 = "<" + e2 + ">";
+                                            e1 = "<" + e1 + ">";
+                                            e2 = "<" + e2 + ">";
 
-                                var mappingURI = "<" + graph + "#" + mappingID + ">";
+                                            var mappingURI = "<" + graph + "#" + mappingID + ">";
 
-                                var pos = triplesArray.length - 1;
+                                            var pos = triplesArray.length - 1;
 
-                                triplesArray[pos] += alignmentURI   + " align:has_mapping "     + mappingURI + " . ";
-                                triplesArray[pos] += mappingURI     + " rdfs:subClassOf "       + " align:Mapping . ";
-                                triplesArray[pos] += mappingURI     + " align:has_entity1 "     + e1 + " . ";
-                                triplesArray[pos] += mappingURI     + " align:has_entity2 "     + e2 + " . ";
-                                triplesArray[pos] += mappingURI     + " align:has_relation "    + relation + " . ";
-                                triplesArray[pos] += mappingURI     + " align:has_measure \""   + measure + "\" . ";
+                                            triplesArray[pos] += alignmentURI   + " align:has_mapping "     + mappingURI + " . ";
+                                            triplesArray[pos] += mappingURI     + " rdfs:subClassOf "       + " align:Mapping . ";
+                                            triplesArray[pos] += mappingURI     + " align:has_entity1 "     + e1 + " . ";
+                                            triplesArray[pos] += mappingURI     + " align:has_entity2 "     + e2 + " . ";
+                                            triplesArray[pos] += mappingURI     + " align:has_relation "    + relation + " . ";
+                                            triplesArray[pos] += mappingURI     + " align:has_measure \""   + measure + "\" . ";
 
-                                triplesArray[pos] += e1 + " rdfs:subClassOf align:Entity . ";
-                                triplesArray[pos] += e2 + " rdfs:subClassOf align:Entity . ";
-                                triplesArray[pos] += e1 + " align:has_mapping " + mappingURI + " . ";
-                                triplesArray[pos] += e2 + " align:has_mapping " + mappingURI + " . ";
-                                triplesArray[pos] += mappingURI     + " align:has_author " + authorURI  + " . ";
-                                triplesArray[pos] += mappingURI     + " align:human_validation \"false\" . ";
-                                triplesArray[pos] += mappingURI     + " align:validation_date \"" + date +  "\"^^xsd:dateTime . ";
+                                            triplesArray[pos] += e1 + " rdfs:subClassOf align:Entity . ";
+                                            triplesArray[pos] += e2 + " rdfs:subClassOf align:Entity . ";
+                                            triplesArray[pos] += e1 + " align:has_mapping " + mappingURI + " . ";
+                                            triplesArray[pos] += e2 + " align:has_mapping " + mappingURI + " . ";
+                                            triplesArray[pos] += mappingURI     + " align:has_author " + authorURI  + " . ";
+                                            triplesArray[pos] += mappingURI     + " align:human_validation \"false\" . ";
+                                            triplesArray[pos] += mappingURI     + " align:validation_date \"" + date +  "\"^^xsd:dateTime . ";
 
-                                i++;
-                                if (i % 10 == 0) {
-                                    triplesArray.push("");
-                                }
-                            }
-                            done(null, triplesArray);
-                        })
+                                            i++;
+                                            if (i % 10 == 0) {
+                                                triplesArray.push("");
+                                            }
+                                        }
+                                        done(null, triplesArray);
+                                    })
+                                });
+                        var triplesArray = res.result;
+                        var titi = Async.runSync(
+                                function(done) {
+                                    console.log("Header incoming");
+                                    Meteor.call('queryUpdateMarmotta', queryHeader, function(err, results) {
+                                        console.log("Header added");
+                                        if (err) console.log(err);
+                                        var queryTriples = [];
+                                        for (var cur in triplesArray) {
+                                            var triples = triplesArray[cur];
+                                            queryTriples.push(
+                                                "PREFIX align:<" + graph + "#> " +
+                                                " INSERT DATA {" +
+                                                "   GRAPH <" + graph + ">" +
+                                                "   {" +
+                                                triples +
+                                                "   }" +
+                                                "}");
+                                        }
+                                        done(null, queryTriples);
+                                    });
+                                });
+                        done(null, titi.result);
                     });
-            var triplesArray = res.result;
-
-            // Do what we can do from server.
-            // Let client (for now) do the triplesMappings with ajax.
-            var titi = Async.runSync(
-                    function(done) {
-                        console.log("Header incoming");
-                        Meteor.call('queryUpdateMarmotta', queryHeader, function(err, results) {
-                            console.log("Header added");
-                            if (err) console.log(err);
-                            var queryTriples = [];
-                            for (var cur in triplesArray) {
-                                //update10triples(triplesArray[cur], cur);
-
-                                var triples = triplesArray[cur];
-                                queryTriples.push(
-                                    "PREFIX align:<" + graph + "#> " +
-                                    " INSERT DATA {" +
-                                    "   GRAPH <" + graph + ">" +
-                                    "   {" +
-                                    triples +
-                                    "   }" +
-                                    "}");
-                            }
-                            done(null, queryTriples);
-                        });
-                    });
-
-            //console.log(queryTriples);
-            // FIXME TMP
-            done(null, titi.result);
-
-            //function update10triples(triples, i) {
-            //    Async.runSync(
-            //            function(done) {
-            //                var query =
-            //                    "PREFIX align:<" + graph + "#> " +
-            //                    " INSERT DATA {" +
-            //                    "   GRAPH <" + graph + ">" +
-            //                    "   {" +
-            //                            triples +
-            //                    "   }" +
-            //                    "}";
-            //                console.log("Triples["+i+"] incoming");
-            //                Meteor.call('queryUpdateMarmotta', query, function(err, results) {
-            //                    console.log("Triples["+i+"] added");
-            //                    if (err) console.log(err);
-
-            //                    console.log(triples);
-            //                    done(null, 'tata');
-            //                });
-            //            });
-            //}
-        });
                 });
 
         var triplesToAdd = res.result;
@@ -405,13 +375,6 @@ Meteor.methods({
         var endpoint = marmottaURL+'/sparql/update';
         var sparql = Meteor.npmRequire('sparql-client');
         var client = new sparql(endpoint);
-        ///var result = Async.runSync (
-                //function(done) {
-                    //for (var cur in triplesToAdd)
-                    //    client.query(triplesToAdd[cur]).execute(function (error, results) {
-                    //        console.log(cur, error);
-                    //    });
-                //});
 
         precompute(0, triplesToAdd.length);
 
@@ -422,37 +385,27 @@ Meteor.methods({
                         function(done) {
                             client.query(triplesToAdd[iterations_min]).execute(function (error, results) {
                                 console.log(iterations_min, error);
-                                var res = {
-                                    iterations_min:iterations_min+1,
-                                    i:i+1
-                                };
-                                done(null, res);
+                                done(null, "end :"+iteration_min);
                             });
                         });
-                                    iterations_min = iterations_min+1;
-                                    i = i+1;
-                //i = lock.result.i;
-                //iterations_min = lock.result.iterations_min;
-                //console.log(iterations_min);
+                iterations_min++;
+                i++;
             }
             if (iterations_min == iterations_max) {
                 console.log("DONE");
                 return;
             }
-            if (iterations_min < iterations_max ) {
+            if (iterations_min < iterations_max ) { // FIXME
                 Meteor.bindEnvironment(setTimeout(Meteor.bindEnvironment(function(){
                     Meteor.bindEnvironment(precompute(iterations_min, iterations_max));
                 }), 0));
             }
         }
-
-        //return res.result;
     }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
         var res = Async.runSync(
                 function(done) {
                     Meteor.call('query', endpoint, queryS, function(err, results) {
-                        //console.log(results);
                         done(null, results);
                     })
                 });
@@ -465,7 +418,6 @@ Meteor.methods({
         var res = Async.runSync(
                 function(done) {
                     Meteor.call('query', endpoint, queryS, function(err, results) {
-                        //console.log(results);
                         done(null, results);
                     })
                 });
