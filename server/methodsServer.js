@@ -247,6 +247,8 @@ Meteor.methods({
         this.unblock();
 
         console.log("TEST 1");
+        var res = Async.runSync(
+                function(done) {
         Meteor.call('getAlignmentsO1O2', ont1, ont2, true, function(err, results) {
             console.log(results);
             if (results.search("result.txt") == -1) // No result file
@@ -283,7 +285,7 @@ Meteor.methods({
                                 onto2ID + " align:has_alignment "+ alignmentURI + " ." +
                                 alignmentURI + " align:tool_date \"" + date +  "\"^^xsd:dateTime . ";
 
-            var query1 =
+            var queryHeader =
                 "PREFIX align:<" + graph + "#> "+
                 " INSERT DATA {" +
                 "	GRAPH <" + graph + "> " +
@@ -294,7 +296,9 @@ Meteor.methods({
             var res = Async.runSync(
                     function(done) {
                         fs.readFile(resultFile, 'utf-8', function(err,data) {
-                            var triples = "";
+                            var triplesArray = [""];
+                            var i = 0;
+
                             var fileArray = data.split('\n');
                             for (var cur in fileArray) {
                                 var currentMapping = fileArray[cur].split(';');
@@ -315,64 +319,134 @@ Meteor.methods({
 
                                 var mappingURI = "<" + graph + "#" + mappingID + ">";
 
-                                //triples += alignmentURI   + " align:has_mapping "     + mappingURI + " . ";
-                                //triples += mappingURI     + " rdfs:subClassOf "       + " align:Mapping . ";
-                                triples += mappingURI     + " align:has_entity1 "     + e1 + " . ";
-                                triples += mappingURI     + " align:has_entity2 "     + e2 + " . ";
-                                //triples += mappingURI     + " align:has_relation "    + relation + " . ";
-                                //triples += mappingURI     + " align:has_measure \""   + measure + "\" . ";
+                                var pos = triplesArray.length - 1;
 
+                                triplesArray[pos] += alignmentURI   + " align:has_mapping "     + mappingURI + " . ";
+                                triplesArray[pos] += mappingURI     + " rdfs:subClassOf "       + " align:Mapping . ";
+                                triplesArray[pos] += mappingURI     + " align:has_entity1 "     + e1 + " . ";
+                                triplesArray[pos] += mappingURI     + " align:has_entity2 "     + e2 + " . ";
+                                triplesArray[pos] += mappingURI     + " align:has_relation "    + relation + " . ";
+                                triplesArray[pos] += mappingURI     + " align:has_measure \""   + measure + "\" . ";
 
-                                //triples += e1 + " rdfs:subClassOf align:Entity . ";
-                                //triples += e2 + " rdfs:subClassOf align:Entity . ";
-                                //triples += mappingURI     + " align:has_author " + authorURI  + " . ";
-                                //triples += mappingURI     + " align:human_validation \"false\" . ";
-                                //triples += mappingURI     + " align:validation_date \"" + date +  "\"^^xsd:dateTime . ";
+                                triplesArray[pos] += e1 + " rdfs:subClassOf align:Entity . ";
+                                triplesArray[pos] += e2 + " rdfs:subClassOf align:Entity . ";
+                                triplesArray[pos] += e1 + " align:has_mapping " + mappingURI + " . ";
+                                triplesArray[pos] += e2 + " align:has_mapping " + mappingURI + " . ";
+                                triplesArray[pos] += mappingURI     + " align:has_author " + authorURI  + " . ";
+                                triplesArray[pos] += mappingURI     + " align:human_validation \"false\" . ";
+                                triplesArray[pos] += mappingURI     + " align:validation_date \"" + date +  "\"^^xsd:dateTime . ";
+
+                                i++;
+                                if (i % 10 == 0) {
+                                    triplesArray.push("");
+                                }
                             }
-                            done(null, triples);
+                            done(null, triplesArray);
                         })
                     });
-            var triples = res.result;
-            //console.log(query1);
-            //console.log(triples);
+            var triplesArray = res.result;
 
-            var query2 =
-                "PREFIX align:<" + graph + "#> " +
-                " INSERT DATA {" +
-                "   GRAPH <" + graph + ">" +
-                "   {" +
-                        triples +
-                "   }" +
-                "}";
+            // Do what we can do from server.
+            // Let client (for now) do the triplesMappings with ajax.
+            var titi = Async.runSync(
+                    function(done) {
+                        console.log("Header incoming");
+                        Meteor.call('queryUpdateMarmotta', queryHeader, function(err, results) {
+                            console.log("Header added");
+                            if (err) console.log(err);
+                            var queryTriples = [];
+                            for (var cur in triplesArray) {
+                                //update10triples(triplesArray[cur], cur);
 
-            //console.log(query2);
-            //try {
-            //    var titi = Async.runSync(
+                                var triples = triplesArray[cur];
+                                queryTriples.push(
+                                    "PREFIX align:<" + graph + "#> " +
+                                    " INSERT DATA {" +
+                                    "   GRAPH <" + graph + ">" +
+                                    "   {" +
+                                    triples +
+                                    "   }" +
+                                    "}");
+                            }
+                            done(null, queryTriples);
+                        });
+                    });
+
+            //console.log(queryTriples);
+            // FIXME TMP
+            done(null, titi.result);
+
+            //function update10triples(triples, i) {
+            //    Async.runSync(
             //            function(done) {
-            //                console.log("Header incoming");
-            //                Meteor.call('queryUpdateMarmotta', query1, function(err, results) {
-            //                    console.log("Header added");
+            //                var query =
+            //                    "PREFIX align:<" + graph + "#> " +
+            //                    " INSERT DATA {" +
+            //                    "   GRAPH <" + graph + ">" +
+            //                    "   {" +
+            //                            triples +
+            //                    "   }" +
+            //                    "}";
+            //                console.log("Triples["+i+"] incoming");
+            //                Meteor.call('queryUpdateMarmotta', query, function(err, results) {
+            //                    console.log("Triples["+i+"] added");
             //                    if (err) console.log(err);
-            //                    done(null, 'titi');
+
+            //                    console.log(triples);
+            //                    done(null, 'tata');
             //                });
             //            });
-            //} catch (e) {
-            //    console.log(e.message);
             //}
-            try {
-                var toto = Async.runSync(
+        });
+                });
+
+        var triplesToAdd = res.result;
+
+        var endpoint = marmottaURL+'/sparql/update';
+        var sparql = Meteor.npmRequire('sparql-client');
+        var client = new sparql(endpoint);
+        ///var result = Async.runSync (
+                //function(done) {
+                    //for (var cur in triplesToAdd)
+                    //    client.query(triplesToAdd[cur]).execute(function (error, results) {
+                    //        console.log(cur, error);
+                    //    });
+                //});
+
+        precompute(0, triplesToAdd.length);
+
+        function precompute(iterations_min, iterations_max) {
+            var i = 0;
+            while((iterations_max-iterations_min) != 0 && i < 10) {
+                var lock = Async.runSync(
                         function(done) {
-                            console.log("Triples incoming");
-                            Meteor.call('queryUpdateMarmotta', query2, function(err, results) {
-                                console.log("Triples added");
-                                if (err) console.log(err);
-                                done(null, 'toto');
+                            client.query(triplesToAdd[iterations_min]).execute(function (error, results) {
+                                console.log(iterations_min, error);
+                                var res = {
+                                    iterations_min:iterations_min+1,
+                                    i:i+1
+                                };
+                                done(null, res);
                             });
                         });
-            } catch(e) {
-                console.log(e.message);
+                                    iterations_min = iterations_min+1;
+                                    i = i+1;
+                //i = lock.result.i;
+                //iterations_min = lock.result.iterations_min;
+                //console.log(iterations_min);
             }
-        });
+            if (iterations_min == iterations_max) {
+                console.log("DONE");
+                return;
+            }
+            if (iterations_min < iterations_max ) {
+                Meteor.bindEnvironment(setTimeout(Meteor.bindEnvironment(function(){
+                    Meteor.bindEnvironment(precompute(iterations_min, iterations_max));
+                }), 0));
+            }
+        }
+
+        //return res.result;
     }, querySelectMarmotta: function(queryS){
         var endpoint = marmottaURL+'/sparql/select';
         var res = Async.runSync(
@@ -398,15 +472,29 @@ Meteor.methods({
         return res.result;
     }, query: function(endpoint, query) {
         //var query = "SELECT * FROM <http://human.owl> WHERE {?s rdfs:subClassOf ?o} LIMIT 10";
-        var sparql = Meteor.npmRequire('sparql-client');
-        var util = Meteor.npmRequire('util');
-
-        var client = new sparql(endpoint);
         var result = Async.runSync(
                 function(done) {
-                    client.query(query).execute(function(error, results) { //FIXME : When query is not valid --> error
-                        //process.stdout.write(util.inspect(arguments, null, 20, true)+"\n");1
-                        done(null, results);
+                    var urlQuery = endpoint + "?query=" + escape(query) + "&output=json";
+                    //var urlQuery = endpoint + "?query=" + encodeURIComponent(query) + "&output=json";
+                    HTTP.call("GET", urlQuery, function(err, results) {
+                        console.log(err);
+                        if (results == null) {
+                            console.log(err);
+                            done(null, 'end');
+                            return;
+                        }
+                        var res = results.content;
+                        if (res === null) {
+                            done(null, "end");
+                            return;
+                        }
+                        else if (res === '') {
+                            done(null, "end");
+                            return;
+                        }
+                        console.log(res === '');
+                        res = JSON.parse(res);
+                        done(null, res);
                     });
                 });
         return result.result;

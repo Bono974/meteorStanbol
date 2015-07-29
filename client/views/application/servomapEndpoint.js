@@ -1,6 +1,8 @@
 var colorSelected       = 0xFFA500ff;
 var colorNonSelected    = 0x009ee8;
 
+var marmottaURL = "http://localhost:8080/marmotta";
+
 Meteor.call('getListOnto', function(error, results) {
     var ontologies = [];
     var tmp = JSON.parse(results.content);
@@ -46,10 +48,8 @@ function confirmMappings() {
         tool:"ServOMap"
     };
 
-    console.log("EN COURS");
-
     Meteor.call("putAlignmentsO1O2", ont1, ont2, settings, function(err, results) {
-        console.log("DONE");
+        console.log("EN COURS");
     });
 }
 
