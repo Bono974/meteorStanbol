@@ -462,7 +462,6 @@ Meteor.methods({
                         var subject = "<" + graph + "#" + doc._id + '_' + doc._rev + ">"; // FIXME : temporary ?
                         var predicate = "<" + graph + "#annotePar>";
                         var triples = findTripleFromDoc(subject, predicate, graph, doc);
-                        //FIXME : PREFIX(es) must be a global variable
                         var queryEnhancements = PREFIX +
                         "INSERT DATA  " +
                         "{"+

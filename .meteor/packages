@@ -30,3 +30,5 @@ netanelgilad:mkdirp
 aslagle:reactive-table
 mikowals:batch-insert
 cosmos:browserify
+nemo64:bootstrap
+less

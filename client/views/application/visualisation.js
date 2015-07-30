@@ -5,8 +5,8 @@ QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 var App = {};
 
 Template.visuVivaGraphGlobal.rendered = function() {
-    //onLoad();
-    pixelOnLoad();
+    onLoad();
+    //pixelOnLoad();
 };
 
 function pixelOnLoad() {
