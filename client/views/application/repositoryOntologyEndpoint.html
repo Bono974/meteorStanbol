@@ -104,9 +104,9 @@
                               <tbody>
                                 <tr>
                                     {{#each rowResultQuery}}
-                                    <td>{{subject}}</td>
-                                    <td>{{predicate}}</td>
-                                    <td>{{object}}</td>
+                                     {{#each res}}
+                                     <td>{{.}}</td>
+                                     {{/each}}
                                     {{/each}}
                                 </tr>
                               </tbody>

@@ -28,7 +28,8 @@ Template.repositoryOnto.helpers({
         var str = Session.get('listOnto');
         return str;
     }, "rowResultQuery": function() {
-        return QueryResult.find({});
+        var results = QueryResult.find({});
+        return results;
     }, "headerResultQuery": function() {
         var headers =  HeaderResult.find({});
         return headers;

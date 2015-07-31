@@ -746,10 +746,20 @@ Meteor.startup(function () {
 // push dataset result into mongodb collection
 function changeMeTODO(datasetSPARQL) {
     HeaderResult.remove({});
+    QueryResult.remove({});
+
     var headers = datasetSPARQL.head.vars;
+    var results = datasetSPARQL.results.bindings;
 
     for (var cur in headers) {
         HeaderResult.insert({header: headers[cur]});
+    }
+    for (var cur in results) {
+        var tmp = [];
+        for (var cur2 in results[cur]) {
+            tmp.push(results[cur][cur2].value);
+        }
+        QueryResult.insert({res: tmp});
     }
 
 }
