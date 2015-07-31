@@ -4,6 +4,7 @@ QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
 var App = {};
 
+
 Template.visuVivaGraphGlobal.rendered = function() {
     onLoad();
     //pixelOnLoad();
@@ -239,6 +240,7 @@ function newGraphFromDataset(settings){
         resG = settings.graph;
     else
         resG = Viva.Graph.graph();
+        //resG = ngraphgraph();
 
     if (typeof(root) != "undefined") {
         resG.addNode(root);

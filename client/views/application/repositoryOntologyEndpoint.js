@@ -1,5 +1,23 @@
-var stanbolURL = "http://localhost:8081";
 var marmottaURL = "http://localhost:8080/marmotta";
+
+Session.setDefault('cursor', 0);
+Meteor.autorun(function(){
+    Meteor.subscribe("resultSPARQL", Session.get('cursor'));
+});
+
+Meteor.autorun(function(){
+    Meteor.subscribe("resultSPARQLHeaders");
+});
+
+//var SQUEBI = {
+//    configurable: true,
+//    selectService: "http://localhost:8080/marmotta/sparql/select",
+//    updateService: "http://localhost:8080/marmotta/sparql/update",
+//    queryParams: {
+//        key: "orejthkjehrtkejrhte"
+//    }
+//};
+//SQUEBI.home = "lib/squebi";
 
 Meteor.startup(function () {
     refreshListOnto();
@@ -9,6 +27,23 @@ Template.repositoryOnto.helpers({
     "listOntos": function() {
         var str = Session.get('listOnto');
         return str;
+    }, "rowResultQuery": function() {
+        return QueryResult.find({});
+    }, "headerResultQuery": function() {
+        var headers =  HeaderResult.find({});
+        return headers;
+    }
+});
+
+Template.EditorPage.helpers({
+    "editorOptions": function() {
+        return {
+            lineNumbers: true,
+            mode: "sparql",
+            theme: "monokai"
+        };
+    }, "editorCode": function() {
+        return "SELECT * WHERE {?s ?p ?o} LIMIT 10";
     }
 });
 
@@ -94,5 +129,21 @@ Template.repositoryOnto.events({
             processData: false  // tell jQuery not to process the data
                 //contentType: false   // tell jQuery not to set contentType
         });
+    }, 'click button[value=runQuery]': function(event, t) {
+        event.preventDefault();
+        var query = Session.get("queryUserSPARQL");
+        Meteor.call("querySelectMarmotta", query, function(err, results) {
+            console.log(query);
+            console.log(results);
+        });
+    }, 'click .previousResults': function(event, t) {
+        event.preventDefault();
+        if (Number(Session.get('cursor')) > 19)
+            Session.set('cursor', Number(Session.get('cursor')) - 20);
+        console.log(Session.get('cursor'));
+    }, 'click .nextResults': function(event, t) {
+        event.preventDefault();
+        Session.set('cursor', Number(Session.get('cursor')) + 20);
+        console.log(Session.get('cursor'));
     }
 });

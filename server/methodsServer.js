@@ -449,6 +449,7 @@ Meteor.methods({
                         done(null, res);
                     });
                 });
+        changeMeTODO(result.result);
         return result.result;
     }, getMetaOnto: function(onto) {
         this.unblock();
@@ -741,7 +742,25 @@ Meteor.startup(function () {
     })
 });
 
-//QueryResult = new Mongo.Collection("resultHDT");
+
+// push dataset result into mongodb collection
+function changeMeTODO(datasetSPARQL) {
+    HeaderResult.remove({});
+    var headers = datasetSPARQL.head.vars;
+
+    for (var cur in headers) {
+        HeaderResult.insert({header: headers[cur]});
+    }
+
+}
+
+Meteor.publish("resultSPARQL", function(cursor) {
+    return QueryResult.find({}, {limit:20, skip:cursor});
+});
+Meteor.publish("resultSPARQLHeaders", function() {
+    return HeaderResult.find({});
+});
+
 //QueryResult.remove({});
 //QueryResult.allow({
 //    insert: function(){return true;}

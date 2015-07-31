@@ -6,9 +6,6 @@
     "config.pixel": {
       "version": "0.1.4",
       "dependencies": {
-        "config.layout": {
-          "version": "0.1.2"
-        },
         "config.view": {
           "version": "0.1.3"
         },
@@ -500,6 +497,59 @@
                   }
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    "vivagraphjs": {
+      "version": "0.7.12",
+      "dependencies": {
+        "gintersect": {
+          "version": "0.1.0"
+        },
+        "ngraph.centrality": {
+          "version": "0.1.3"
+        },
+        "ngraph.forcelayout": {
+          "version": "0.0.20",
+          "dependencies": {
+            "ngraph.physics.simulator": {
+              "version": "0.0.10",
+              "dependencies": {
+                "ngraph.physics.primitives": {
+                  "version": "0.0.7"
+                },
+                "ngraph.quadtreebh": {
+                  "version": "0.0.3"
+                },
+                "ngraph.expose": {
+                  "version": "0.0.0"
+                }
+              }
+            }
+          }
+        },
+        "ngraph.fromjson": {
+          "version": "0.1.7"
+        },
+        "ngraph.generators": {
+          "version": "0.0.15"
+        },
+        "ngraph.merge": {
+          "version": "0.0.1"
+        },
+        "ngraph.random": {
+          "version": "0.0.1"
+        },
+        "ngraph.tojson": {
+          "version": "0.1.3"
+        },
+        "simplesvg": {
+          "version": "0.0.10",
+          "dependencies": {
+            "add-event-listener": {
+              "version": "0.0.1"
             }
           }
         }

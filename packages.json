@@ -8,5 +8,6 @@
     "ngraph.events": "0.0.3",
     "pixel.layout": "0.1.1",
     "config.pixel": "0.1.4",
-    "config.layout": "0.1.2"
+    "config.layout": "0.1.2",
+    "vivagraphjs": "0.7.12"
 }
