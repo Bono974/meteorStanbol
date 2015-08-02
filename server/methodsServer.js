@@ -107,7 +107,7 @@ function findTripleFromDoc(subject, predicate, graph, doc) {
     var predicateRdfsType = "rdfs:type";
     var attachmentTriple =  subject + " " + predicateRdfsLabel + " \"" + attachment + "\"@fr .";
 
-    console.log(attachmentTriple);
+    //console.log(attachmentTriple);
 
     var typeRessource = subject + " " + predicateRdfsType + "<" + typeRessourceAnnotated + ">";
 
@@ -211,7 +211,7 @@ Meteor.methods({
                         var res = "NULL";
                         if (results.result.existed) {
                             res = results.result.folder;
-                            console.log(res);
+                            //console.log(res);
                             fs.stat(res+"/result.txt", function(err, stat) {
                                 if (err == null)
                                     done(null, res+"/result.txt"); // Mapping exist -> show to client (string/JSON to visu)
@@ -246,15 +246,12 @@ Meteor.methods({
         // TODO : test if alignments are already in repository (versionning ?)
         this.unblock();
 
-        console.log("TEST 1");
         var res = Async.runSync(
                 function(done) {
                     Meteor.call('getAlignmentsO1O2', ont1, ont2, true, function(err, results) {
-                        console.log(results);
                         if (results.search("result.txt") == -1) // No result file
                             return;
 
-                        console.log("TEST 2");
 
                         var resultFile = results;
 
@@ -347,9 +344,9 @@ Meteor.methods({
                         var triplesArray = res.result;
                         var titi = Async.runSync(
                                 function(done) {
-                                    console.log("Header incoming");
+                                    //console.log("Header incoming");
                                     Meteor.call('queryUpdateMarmotta', queryHeader, function(err, results) {
-                                        console.log("Header added");
+                                        //console.log("Header added");
                                         if (err) console.log(err);
                                         var queryTriples = [];
                                         for (var cur in triplesArray) {
@@ -384,7 +381,6 @@ Meteor.methods({
                 var lock = Async.runSync(
                         function(done) {
                             client.query(triplesToAdd[iterations_min]).execute(function (error, results) {
-                                console.log(iterations_min, error);
                                 done(null, "end :"+iteration_min);
                             });
                         });
@@ -392,7 +388,7 @@ Meteor.methods({
                 i++;
             }
             if (iterations_min == iterations_max) {
-                console.log("DONE");
+                //console.log("DONE");
                 return;
             }
             if (iterations_min < iterations_max ) { // FIXME
@@ -449,7 +445,6 @@ Meteor.methods({
                         done(null, res);
                     });
                 });
-        changeMeTODO(result.result);
         return result.result;
     }, getMetaOnto: function(onto) {
         this.unblock();
@@ -559,7 +554,7 @@ Meteor.methods({
         return res;
     }, fileUpload:function (filename, fileData) {
         var filePath = tempDirectoryToAnnotate + filename;
-        console.log(filePath);
+        //console.log(filePath);
         fs.writeFile(filePath, new Buffer(fileData));
     }, getRessource: function(filename) {
         var res; // FIXME init with MEteor npm package async
@@ -590,25 +585,25 @@ Meteor.methods({
         if (!bool)
             res = { checked: false };
 
-        console.log("CHECK RESSOURCE");
-        console.log(res);
+        //console.log("CHECK RESSOURCE");
+        //console.log(res);
         return res;
     }, addRessourceAnnotated: function(filename, author, extendedRessource, enhancement) {
         this.unblock();
 
-        console.log("ADD RESSOURCE");
+        //console.log("ADD RESSOURCE");
         db.save(filename, {
             filename: filename,
             author: author,
             enhancement : enhancement
         }, Meteor.bindEnvironment(function (err, res) {
             if (err) console.log(err);
-            else console.log(res);
+            //else console.log(res);
 
             var id = res.id;
             var rev = res.rev;
 
-            console.log(filename);
+            //console.log(filename);
             Meteor.call("addAttachment",
                     filename,
                     author,
@@ -633,12 +628,12 @@ Meteor.methods({
             id: doc._id,
             rev: doc._rev
         };
-        console.log("ADD ATTACHMENT");
-        console.log(doc);
-        console.log(ressource);
+        //console.log("ADD ATTACHMENT");
+        //console.log(doc);
+        //console.log(ressource);
 
         var filePath = tempDirectoryToAnnotate + ressource.name;
-        console.log("FILEPATH" + filePath);
+        //console.log("FILEPATH" + filePath);
         var readStream = fs.createReadStream(filePath);
 
         var attachmentData = {
@@ -652,7 +647,7 @@ Meteor.methods({
                         console.dir(err);
                         return;
                     }
-                    console.dir(reply);
+                    //console.dir(reply);
                 });
         readStream.pipe(writeStream);
     }, getRevDocument: function(ressource) {
@@ -672,7 +667,7 @@ Meteor.methods({
                     filename: settings.filename,
                     enhancement: enhancement },
                     Meteor.bindEnvironment(function (err, res) {
-                        console.log(res);
+                        //console.log(res);
                         Meteor.call("updateRessource",
                                 settings.id,
                                 res.rev,
@@ -680,8 +675,8 @@ Meteor.methods({
                                 settings.author,
                                 extendedRessource,
                                 function(errors, results) {
-                                    console.log(errors);
-                                    console.log(results);
+                                    //console.log(errors);
+                                    //console.log(results);
                                 }); //FIXME : check if same ressource
                     }));
     }, updateRessource: function(id, rev, filename, author, extendedRessource) {
@@ -700,7 +695,7 @@ Meteor.methods({
         var res = Async.runSync(
                 function(done) {
                     hdt.fromFile(hdtFilePath, function(error, hdtDocument) {
-                        console.log(error);
+                        //console.log(error);
                         hdtDocument.searchTriples(subject, predicate, object, {offset:0, limit:limit},
                             function(error, triples, totalCount){
                                 //console.log(triples);
@@ -720,17 +715,60 @@ Meteor.methods({
         var res = Async.runSync(
                 function(done) {
                     hdt.fromFile(hdtFilePath, function(error, hdtDocument) {
-                        console.log(error);
+                        //console.log(error);
                         hdtDocument.searchLiterals(pattern, {offset:offset, limit:limit},
                             function(error, literals, totalCount){
-                                console.log(error);
-                                console.log(literals);
+                                //console.log(error);
+                                //console.log(literals);
                                 hdtDocument.close();
                                 done(null, literals);
                             });
                     })
                 });
         return res.result;
+    }, getEntityPredicates: function(currentEntity) {
+        this.unblock();
+
+        var uriEntity;
+        if (entityIsIndividual(currentEntity))
+            uriEntity = "\"" + currentEntity + "\"";
+        else
+            uriEntity = "<" + currentEntity + ">";
+
+        var queryPredicates =
+            //"SELECT DISTINCT ?predicate"+
+            "SELECT *"+
+            "WHERE {"+
+                uriEntity + " ?predicate ?object"+
+            "}";
+        var queryMappings =
+            "PREFIX align:<http://alignmentsGraph#>"+
+            "SELECT *"+
+            "WHERE {"+
+                uriEntity + " align:has_mapping ?subject ."+
+                "?subject ?test ?mapping ."+
+                "FILTER (?test in (align:has_entity1, align:has_entity2))."+
+                "FILTER (?mapping!=" + uriEntity + ")."+
+            "}" ;
+
+        Meteor.call("querySelectMarmotta", queryPredicates, function(err, results) {
+            var predicates = results.results.bindings;
+            Meteor.call("querySelectMarmotta", queryMappings, function(err, results) {
+                var mappings = results.results.bindings;
+                updatePredicateMappingsCurrentEntity(predicates, mappings);
+            });
+        });
+    }, getSPARQLResultUser: function(query) {
+        this.unblock();
+
+        var result = Async.runSync(
+                function(done) {
+                    Meteor.call("querySelectMarmotta", query, function(err, results) {
+                        updateHeaderGResultsDB(results);
+                        done(null, results);
+                    });
+                });
+        return result.result;
     }
 });
 
@@ -742,14 +780,20 @@ Meteor.startup(function () {
     })
 });
 
-
+function entityIsIndividual(entity) {
+    if (entity.search("http://") == -1)
+        return true;
+    return false;
+}
 // push dataset result into mongodb collection
-function changeMeTODO(datasetSPARQL) {
+function updateHeaderGResultsDB(datasetSPARQL) {
     HeaderResult.remove({});
     QueryResult.remove({});
 
     var headers = datasetSPARQL.head.vars;
+    //console.log(headers);
     var results = datasetSPARQL.results.bindings;
+    //console.log(results);
 
     for (var cur in headers) {
         HeaderResult.insert({header: headers[cur]});
@@ -761,18 +805,33 @@ function changeMeTODO(datasetSPARQL) {
         }
         QueryResult.insert({res: tmp});
     }
-
 }
 
-Meteor.publish("resultSPARQL", function(cursor) {
-    return QueryResult.find({}, {limit:20, skip:cursor});
-});
-Meteor.publish("resultSPARQLHeaders", function() {
-    return HeaderResult.find({});
-});
+function updatePredicateMappingsCurrentEntity(predicates, mappings) {
+    PredicatesResult.remove({});
+    MappingsResult.remove({});
 
-//QueryResult.remove({});
-//QueryResult.allow({
-//    insert: function(){return true;}
-//});
+    for (var cur in predicates)
+        PredicatesResult.insert({predicate: predicates[cur].predicate.value});
 
+    for (var cur in mappings)
+        MappingsResult.insert({mapping: mappings[cur].mapping.value});
+}
+
+
+Meteor.publish(
+    "resultSPARQL", function(cursor) {
+        return QueryResult.find({}, {limit:20, skip:cursor});
+});
+Meteor.publish(
+    "resultSPARQLHeaders", function() {
+        return HeaderResult.find({});
+});
+Meteor.publish(
+    "resultSPARQLPredicates", function() {
+        return PredicatesResult.find({});
+});
+Meteor.publish(
+    "resultSPARQLMappings", function() {
+        return MappingsResult.find({});
+});

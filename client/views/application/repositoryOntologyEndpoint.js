@@ -2,22 +2,11 @@ var marmottaURL = "http://localhost:8080/marmotta";
 
 Session.setDefault('cursor', 0);
 Meteor.autorun(function(){
-    Meteor.subscribe("resultSPARQL", Session.get('cursor'));
-});
-
-Meteor.autorun(function(){
     Meteor.subscribe("resultSPARQLHeaders");
+    Meteor.subscribe("resultSPARQL", Session.get('cursor'));
+    Meteor.subscribe("resultSPARQLPredicates");
+    Meteor.subscribe("resultSPARQLMappings");
 });
-
-//var SQUEBI = {
-//    configurable: true,
-//    selectService: "http://localhost:8080/marmotta/sparql/select",
-//    updateService: "http://localhost:8080/marmotta/sparql/update",
-//    queryParams: {
-//        key: "orejthkjehrtkejrhte"
-//    }
-//};
-//SQUEBI.home = "lib/squebi";
 
 Meteor.startup(function () {
     refreshListOnto();
@@ -33,6 +22,19 @@ Template.repositoryOnto.helpers({
     }, "headerResultQuery": function() {
         var headers =  HeaderResult.find({});
         return headers;
+    }, "currentEntity": function() {
+        var currentEntity = Router.current().params.query.currentEntity;
+        Session.set("currentEntity", currentEntity);
+        Meteor.call("getEntityPredicates", currentEntity);
+        return currentEntity;
+    }, 'escapeEntity': function(entity) {
+        return encodeURIComponent(entity);
+    }, "currentEntityPredicates": function() {
+        var predicates = PredicatesResult.find({});
+        return predicates;
+    }, "currentEntityMappings": function() {
+        var mappings = MappingsResult.find({});
+        return mappings;
     }
 });
 
@@ -61,6 +63,7 @@ Template.metadata.helpers({
         return Session.get('ontoSelected');
     }
 });
+
 
 function refreshListOnto() {
     Meteor.call('getListOnto', function(error, results) {
@@ -133,7 +136,7 @@ Template.repositoryOnto.events({
     }, 'click button[value=runQuery]': function(event, t) {
         event.preventDefault();
         var query = Session.get("queryUserSPARQL");
-        Meteor.call("querySelectMarmotta", query, function(err, results) {
+        Meteor.call("getSPARQLResultUser", query, function(err, results) {
             console.log(query);
             console.log(results);
         });
