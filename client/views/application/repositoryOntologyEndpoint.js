@@ -27,8 +27,15 @@ Template.repositoryOnto.helpers({
         Session.set("currentEntity", currentEntity);
         Meteor.call("getEntityPredicates", currentEntity);
         return currentEntity;
-    }, 'escapeEntity': function(entity) {
+    }, "escapeEntity": function(entity) {
         return encodeURIComponent(entity);
+    }, "currentEntityLabel": function() {
+        var currentEntity = Session.get("currentEntity");
+        Meteor.call("getEntityLabel", currentEntity, function(err, results) {
+            console.log(results);
+            Session.set("currentEntityLabel", results);
+        });
+        return Session.get("currentEntityLabel");
     }, "currentEntityPredicates": function() {
         var predicates = PredicatesResult.find({});
         return predicates;

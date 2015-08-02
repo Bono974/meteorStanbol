@@ -736,8 +736,7 @@ Meteor.methods({
             uriEntity = "<" + currentEntity + ">";
 
         var queryPredicates =
-            //"SELECT DISTINCT ?predicate"+
-            "SELECT *"+
+            "SELECT DISTINCT ?predicate "+
             "WHERE {"+
                 uriEntity + " ?predicate ?object"+
             "}";
@@ -766,6 +765,21 @@ Meteor.methods({
                     Meteor.call("querySelectMarmotta", query, function(err, results) {
                         updateHeaderGResultsDB(results);
                         done(null, results);
+                    });
+                });
+        return result.result;
+    }, getEntityLabel: function(entity) {
+        this.unblock();
+
+        var query = "SELECT ?label WHERE {<"+ entity +"> rdfs:label ?label}";
+
+        var result = Async.runSync(
+                function(done) {
+                    Meteor.call("querySelectMarmotta", query, function(err, results) {
+                        var label = "No label";
+                        if (typeof(results.results.bindings[0]) != "undefined")
+                            label = results.results.bindings[0].label.value;
+                        done(null, label);
                     });
                 });
         return result.result;
