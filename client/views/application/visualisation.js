@@ -6,10 +6,9 @@ var App = {};
 
 
 Template.visuVivaGraphGlobal.rendered = function() {
-    onLoad();
-    //pixelOnLoad();
+    //onLoad();
+    pixelOnLoad();
 };
-
 function pixelOnLoad() {
     App.graph = ngraphgraph();
     console.log(App.graph);
@@ -18,7 +17,7 @@ function pixelOnLoad() {
 
     var pixelRender = ngraphpixel;
     App.renderer = pixelRender(App.graph, {
-        settings: true
+        container: document.getElementById("graph-container")
     });
 
     App.addCurrentNodeSettings = createNodeSettings;
@@ -111,7 +110,8 @@ Template.visualisation.helpers({
 Template.visualisation.events({
     "click button[value=renderQuery]": function(event, t) {
         event.preventDefault();
-        var query = t.$('textarea[name=querySparql]')[0].value;
+        //var query = t.$('textarea[name=querySparql]')[0].value;
+        var query = Session.get("queryUserSPARQL");
 
         var sparqlChooser1 = t.$('input[name=selectSPARQL]')[0].checked;
         var sparqlChooser2 = t.$('input[name=selectSPARQL]')[1].checked;

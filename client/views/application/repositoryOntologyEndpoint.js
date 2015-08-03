@@ -36,14 +36,12 @@ Template.repositoryOnto.helpers({
     }, "currentEntity": function() {
         var currentEntity = Router.current().params.query.currentEntity;
         var currentPredicate = Router.current().params.query.currentPredicate;
-        if (Session.get("currentEntity") != currentEntity)
-            Meteor.call("updateCurrentEntityMetadata", currentEntity, function(err, results) {
+        Meteor.call("updateCurrentEntityMetadata", currentEntity, function(err, results) {
                 Session.set("currentEntity", currentEntity);
             });
         //if (typeof(currentPredicate) != "undefined")
         //    Meteor.call("getEntitiesByPredicate", currentEntity, currentPredicate);
-        //return currentEntity;
-        return Session.get("currentEntity");
+        return currentEntity;
     }, "escapeEntity": function(entity) {
         return encodeURIComponent(entity);
     }, "currentEntityLabel": function() {

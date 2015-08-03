@@ -11,13 +11,6 @@
     margin:0;
 }
 
-
-/*#graph-container {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    overflow: hidden;
-} */
 .graph-overlay {
     position: absolute;
     width: 100%;
@@ -84,7 +77,7 @@
     margin: 50px;
     position: fixed;
     left: 0;
-    top: 56%;
+    top: 70%;
     z-index: 99999;
 }
 #URLRessource {
@@ -102,7 +95,7 @@
 </div>
 
 <div id=querySPARQL>
-    <textarea name="querySparql" placeholder="Query SPARQL" rows="10" cols="70"></textarea> <br/>
+    {{>EditorPage}}
     <button value="renderQuery"> OK </button>
     <select name='predicateC'>
         {{#each listPredicate}}
@@ -110,8 +103,6 @@
         {{/each}}
     </select>
 </div>
-
-<!-- {{> reactiveTable settings=settingsTable}} -->
 
 <button id="loadRandomGraph">Load random graph</button>
 <button id="toggleRender" value="pause">Pause render</button>
