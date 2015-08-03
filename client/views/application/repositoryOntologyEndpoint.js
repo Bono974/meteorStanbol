@@ -1,11 +1,16 @@
 var marmottaURL = "http://localhost:8080/marmotta";
 
 Session.setDefault('cursor', 0);
+Session.setDefault('cursorRight', 0);
+Session.setDefault('cursorLeft', 0);
 Meteor.autorun(function(){
     Meteor.subscribe("resultSPARQLHeaders");
     Meteor.subscribe("resultSPARQL", Session.get('cursor'));
     Meteor.subscribe("resultSPARQLPredicates");
     Meteor.subscribe("resultSPARQLMappings");
+
+    Meteor.subscribe("resultSPARQLEntityRight", Session.get('cursorRight'));
+    Meteor.subscribe("resultSPARQLEntityLeft", Session.get('cursorLeft'));
 });
 
 Meteor.startup(function () {
@@ -19,14 +24,26 @@ Template.repositoryOnto.helpers({
     }, "rowResultQuery": function() {
         var results = QueryResult.find({});
         return results;
+    }, "rowResultQueryEntityRight": function() {
+        var results = QueryResultEntityRight.find({});
+        return results;
+    }, "rowResultQueryEntityLeft": function() {
+        var results = QueryResultEntityLeft.find({});
+        return results;
     }, "headerResultQuery": function() {
         var headers =  HeaderResult.find({});
         return headers;
     }, "currentEntity": function() {
         var currentEntity = Router.current().params.query.currentEntity;
-        Session.set("currentEntity", currentEntity);
-        Meteor.call("getEntityPredicates", currentEntity);
-        return currentEntity;
+        var currentPredicate = Router.current().params.query.currentPredicate;
+        if (Session.get("currentEntity") != currentEntity)
+            Meteor.call("updateCurrentEntityMetadata", currentEntity, function(err, results) {
+                Session.set("currentEntity", currentEntity);
+            });
+        //if (typeof(currentPredicate) != "undefined")
+        //    Meteor.call("getEntitiesByPredicate", currentEntity, currentPredicate);
+        //return currentEntity;
+        return Session.get("currentEntity");
     }, "escapeEntity": function(entity) {
         return encodeURIComponent(entity);
     }, "currentEntityLabel": function() {

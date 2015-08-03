@@ -425,9 +425,9 @@ Meteor.methods({
                     var urlQuery = endpoint + "?query=" + escape(query) + "&output=json";
                     //var urlQuery = endpoint + "?query=" + encodeURIComponent(query) + "&output=json";
                     HTTP.call("GET", urlQuery, function(err, results) {
-                        console.log(err);
+                        //console.log(err);
                         if (results == null) {
-                            console.log(err);
+                            //console.log(err);
                             done(null, 'end');
                             return;
                         }
@@ -440,7 +440,7 @@ Meteor.methods({
                             done(null, "end");
                             return;
                         }
-                        console.log(res === '');
+                        //console.log(res === '');
                         res = JSON.parse(res);
                         done(null, res);
                     });
@@ -726,7 +726,15 @@ Meteor.methods({
                     })
                 });
         return res.result;
-    }, getEntityPredicates: function(currentEntity) {
+    }, getEntitiesByPredicate: function(currentEntity, predicate) {
+        this.unblock();
+        var query =
+            "SELECT *"+
+            "WHERE {"+
+             "<" + currentEntity +  "> <" + predicate + "> ?object"+
+             "}";
+        Meteor.call("getSPARQLResultUser", query);
+    }, updateCurrentEntityMetadata: function(currentEntity) {
         this.unblock();
 
         var uriEntity;
@@ -750,12 +758,37 @@ Meteor.methods({
                 "FILTER (?mapping!=" + uriEntity + ")."+
             "}" ;
 
+        var queryRight =
+            "SELECT * "+
+            "WHERE {"+
+                uriEntity + " ?predicate ?object"+
+            "}";
+        var queryLeft =
+            "SELECT * "+
+            "WHERE {"+
+                "?subject ?predicate "+ uriEntity+
+            "}";
+        //FIXME FIXME FIXME
         Meteor.call("querySelectMarmotta", queryPredicates, function(err, results) {
-            var predicates = results.results.bindings;
-            Meteor.call("querySelectMarmotta", queryMappings, function(err, results) {
-                var mappings = results.results.bindings;
-                updatePredicateMappingsCurrentEntity(predicates, mappings);
-            });
+            if (typeof(results.results) != "undefined") {
+                var predicates = results.results.bindings;
+                Meteor.call("querySelectMarmotta", queryMappings, function(err, results) {
+                    if (typeof(results.results) != "undefined") {
+                        var mappings = results.results.bindings;
+                        Meteor.call("querySelectMarmotta", queryRight, function(err, results) {
+                            if (typeof(results.results) != "undefined") {
+                                var right = results.results.bindings;
+                                Meteor.call("querySelectMarmotta", queryLeft, function(err, results) {
+                                    if (typeof(results.results) != "undefined") {
+                                        var left = results.results.bindings;
+                                        updateCurrentEntity(predicates, mappings, right, left);
+                                    }
+                                });
+                            }// else updateCurrentEntity(predicates, mappings);
+                        });
+                    }
+                });
+            }
         });
     }, getSPARQLResultUser: function(query) {
         this.unblock();
@@ -791,10 +824,19 @@ Meteor.startup(function () {
     UploadServer.init({
         tmpDir:"../../../../../.uploads/tmp",
         uploadDir:"../../../../../.uploads/"
-    })
+    });
+
+    QueryResult.remove({});
+    HeaderResult.remove({});
+    PredicatesResult.remove({});
+    MappingsResult.remove({});
+    QueryResultEntityRight.remove({});
+    QueryResultEntityLeft.remove({});
 });
 
 function entityIsIndividual(entity) {
+    if (entity == null)
+        return false;
     if (entity.search("http://") == -1)
         return true;
     return false;
@@ -805,9 +847,7 @@ function updateHeaderGResultsDB(datasetSPARQL) {
     QueryResult.remove({});
 
     var headers = datasetSPARQL.head.vars;
-    //console.log(headers);
     var results = datasetSPARQL.results.bindings;
-    //console.log(results);
 
     for (var cur in headers) {
         HeaderResult.insert({header: headers[cur]});
@@ -821,15 +861,34 @@ function updateHeaderGResultsDB(datasetSPARQL) {
     }
 }
 
-function updatePredicateMappingsCurrentEntity(predicates, mappings) {
+function updateCurrentEntity(predicates, mappings, right, left) {
+    console.log('POW');
     PredicatesResult.remove({});
     MappingsResult.remove({});
+    QueryResultEntityRight.remove({});
+    QueryResultEntityLeft.remove({});
 
     for (var cur in predicates)
         PredicatesResult.insert({predicate: predicates[cur].predicate.value});
 
     for (var cur in mappings)
         MappingsResult.insert({mapping: mappings[cur].mapping.value});
+
+    var right = right || [];
+    var left = left || [];
+
+    for (var cur in right) {
+        var tmp = [];
+        tmp.push(right[cur].predicate.value);
+        tmp.push(right[cur].object.value);
+        QueryResultEntityRight.insert({res: tmp});
+    }
+    for (var cur in left) {
+        var tmp = [];
+        tmp.push(left[cur].subject.value);
+        tmp.push(left[cur].predicate.value);
+        QueryResultEntityLeft.insert({res: tmp});
+    }
 }
 
 
@@ -848,4 +907,12 @@ Meteor.publish(
 Meteor.publish(
     "resultSPARQLMappings", function() {
         return MappingsResult.find({});
+});
+Meteor.publish(
+    "resultSPARQLEntityRight", function(cursor) {
+        return QueryResultEntityRight.find({}, {limit:20, skip:cursor});
+});
+Meteor.publish(
+    "resultSPARQLEntityLeft", function(cursor) {
+        return QueryResultEntityLeft.find({}, {limit:20, skip:cursor});
 });

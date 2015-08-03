@@ -60,14 +60,25 @@
                 <a class="navbar-brand" href="#">ServOWeb 2</a>
             </div>
 
-            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                    <li class="active"><a href="#"> Ontology repository <span class="sr-only">(current)</span></a></li>
-                    <li><a href="./repositoryRessource">Ressource enhancement</a></li>
-                    <li><a href="./servomap">Alignment process</a></li>
-                    <li><a href="./visualisation">Visualization</a></li>
-                </ul>
-            </div><!-- /.navbar-collapse -->
+            <center>
+                <div class="collapse navbar-collapse" id="navbar-main">
+                    <ul class="nav navbar-nav">
+                        <li class="active"><a href="#"> Ontology repository <span class="sr-only">(current)</span></a></li>
+                        <li><a href="./repositoryRessource">Ressource enhancement</a></li>
+                        <li><a href="./servomap">Alignment process</a></li>
+                        <li><a href="./visualisation">Visualization</a></li>
+                    </ul>
+                    <form class="navbar-form navbar-right" role="search">
+                        <div class="form-group">
+                            <input type="text" class="form-control" name="username" placeholder="Username">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="password" placeholder="Password">
+                        </div>
+                        <button type="submit" class="btn btn-default">Sign in</button>
+                    </form>
+                </div><!-- /.navbar-collapse -->
+            </center>
         </div><!-- /.container-fluid -->
     </nav>
 
@@ -76,6 +87,7 @@
     <li role="presentation" class="active"><a href="#Overview" aria-controls="Overview" role="tab" data-toggle="tab">Overview</a></li>
     <li role="presentation"><a href="#EntityViewer" aria-controls="EntityViewer" role="tab" data-toggle="tab">EntityViewer</a></li>
     <li role="presentation"><a href="#MappingViewer" aria-controls="MappingViewer" role="tab" data-toggle="tab">MappingViewer</a></li>
+    <li role="presentation"><a href="#AdminViewer" aria-controls="AdminViewer" role="tab" data-toggle="tab">Administration</a></li>
   </ul>
 
   <!-- Tab panes -->
@@ -105,6 +117,7 @@
                               </thead>
                               <tbody>
                                  {{#each currentEntityPredicates}}
+                                 <!--<tr><a href="./repositoryOnto?currentEntity={{escapeEntity currentEntity}}&currentPredicate={{escapeEntity predicate}}">{{predicate}}</a></tr>-->
                                  <tr><a href="./repositoryOnto?currentEntity={{escapeEntity predicate}}">{{predicate}}</a></tr>
                                  {{/each}}
                                  <!-- TODO : show result "currentEntity predicate ?object" -->
@@ -129,7 +142,7 @@
                       <div class="panel-heading"> SPARQL Query </div>
                       <div class="panel-body">
                           {{>EditorPage}}
-                          <button type="button" class="btn btn-default" value="runQuery"> Run </button>
+                          <center><br/><button type="button" class="btn btn-default" value="runQuery"> Run </button></center>
                       </div>
                   </div>
                   <div class="panel panel-default">
@@ -144,6 +157,15 @@
                               <tbody>
                                     {{#each rowResultQuery}}
                                 <tr>
+                                    <!--
+                                    {{#each res}}
+                                  {{#each headerResultQuery}}
+                                  <td>{{.[header]}}</td>
+                                  {{/each}}
+                                  {{/each}}
+                                        -->
+
+
                                      {{#each res}}
                                      <td><a href="./repositoryOnto?currentEntity={{escapeEntity .}}">{{.}}</a></td>
                                      {{/each}}
@@ -161,8 +183,47 @@
           </div>
       </div>
 
-      <div role="tabpanel" class="tab-pane" id="EntityViewer">EntityViewer Content</div>
+      <div role="tabpanel" class="tab-pane" id="EntityViewer">
+          <br/>
+          <div class="panel panel-default">
+              <div class="panel-heading"> [{{currentEntityLabel}}] : {{currentEntity}}
+              </div>
+              <div class="panel-body">
+                  <table class="table table-striped table-condensed table-hover table-bordered">
+                      <thead>
+                          <th>predicate</th>
+                          <th>object</th>
+                      </thead>
+                      <tbody>
+                      {{#each rowResultQueryEntityRight}}
+                      <tr>
+                          {{#each res}}
+                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity .}}">{{.}}</a></td>
+                          {{/each}}
+                      </tr>
+                      {{/each}}
+                      </tbody>
+                  </table>
+                  <table class="table table-striped table-condensed table-hover table-bordered">
+                      <thead>
+                          <th>subject</th>
+                          <th>predicate</th>
+                      </thead>
+                      <tbody>
+                      {{#each rowResultQueryEntityLeft}}
+                      <tr>
+                          {{#each res}}
+                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity .}}">{{.}}</a></td>
+                          {{/each}}
+                      </tr>
+                      {{/each}}
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+      </div>
       <div role="tabpanel" class="tab-pane" id="MappingViewer">MappingViewer Content</div>
+      <div role="tabpanel" class="tab-pane" id="AdminViewer">Administration</div>
   </div>
 </div>
 
