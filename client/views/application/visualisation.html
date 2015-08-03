@@ -1,5 +1,6 @@
 <template name="visualisation">
 
+{{#if vivagraphjs}}
 <style type='text/css'>
 
 #graph-container {
@@ -10,7 +11,6 @@
     padding: 0;
     margin:0;
 }
-
 .graph-overlay {
     position: absolute;
     width: 100%;
@@ -30,7 +30,6 @@
     top: 0;
     z-index: 99999;
 }
-
 #toggleRender {
     margin: 50px;
     position: fixed;
@@ -77,17 +76,43 @@
     margin: 50px;
     position: fixed;
     left: 0;
-    top: 70%;
+    top: 50%;
     z-index: 99999;
 }
 #URLRessource {
     margin: 50px;
     position: fixed;
     left: 0;
-    top: 75%;
+    top: 55%;
     z-index: 99999;
 }
 </style>
+{{else}}
+<style type='text/css'>
+#graph-container {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    overflow: hidden;
+    padding: 0;
+    margin:0;
+}
+#selectSPARQL {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 5%;
+    z-index: 99999;
+}
+#querySPARQL {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 10%;
+    z-index: 99999;
+}
+</style>
+{{/if}}
 <div id=selectSPARQL>
     Visualisation <br/>
     <input id="selectSPARQLM" type="radio" name="selectSPARQL" value="marmotta" checked="checked"> Marmotta
@@ -96,22 +121,24 @@
 
 <div id=querySPARQL>
     {{>EditorPage}}
-    <button value="renderQuery"> OK </button>
-    <select name='predicateC'>
+    <button class="btn btn-default" value="renderQuery"> OK </button>
+    <select class="form-control" name='predicateC'>
         {{#each listPredicate}}
         <option value={{.}}> {{.}} </option>
         {{/each}}
     </select>
 </div>
 
-<button id="loadRandomGraph">Load random graph</button>
-<button id="toggleRender" value="pause">Pause render</button>
-<button id="toggleFreeze" value="unfreezed"> No node selected </button>
-<button id="cutSelection"> Cut selection ? </button>
-<button id="keepSelection"> Keep selection ? </button>
+{{#if vivagraphjs}}
+    <button id="loadRandomGraph">Load random graph</button>
+    <button id="toggleRender" value="pause">Pause render</button>
+    <button id="toggleFreeze" value="unfreezed"> No node selected </button>
+    <button id="cutSelection"> Cut selection ? </button>
+    <button id="keepSelection"> Keep selection ? </button>
 
-<textarea id="tmpMetaMode" name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea>
-<input type="text" id="URLRessource" name="URLRessource" value={{URLRessource}} size="72">
+    <textarea id="tmpMetaMode" name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea>
+    <input type="text" id="URLRessource" name="URLRessource" value={{URLRessource}} size="72">
+{{/if}}
 
 {{>visuVivaGraphGlobal}}
 </template>

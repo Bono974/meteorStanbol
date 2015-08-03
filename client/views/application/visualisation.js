@@ -4,11 +4,13 @@ QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
 var App = {};
 
-
-Template.visuVivaGraphGlobal.rendered = function() {
+Template.visualisation.rendered = function() {
     //onLoad();
+    //Session.set("vivagraphjs", true);
     pixelOnLoad();
+    Session.set("vivagraphjs", false);
 };
+
 function pixelOnLoad() {
     App.graph = ngraphgraph();
     console.log(App.graph);
@@ -17,7 +19,7 @@ function pixelOnLoad() {
 
     var pixelRender = ngraphpixel;
     App.renderer = pixelRender(App.graph, {
-        container: document.getElementById("graph-container")
+        container: document.getElementById('graph-container')
     });
 
     App.addCurrentNodeSettings = createNodeSettings;
@@ -25,34 +27,42 @@ function pixelOnLoad() {
     App.gui = App.settingsView.gui();
     App.nodeSettings = App.addCurrentNodeSettings(App.gui, App.renderer);
 
-    App.renderer.on('nodeClick', showNodeDetails);
+    App.renderer.on('nodehover', showNodeDetails);
+    App.renderer.on('nodeclick', showNodeDetails);
 
     console.log(App.renderer);
 }
 
-
 function showNodeDetails(node) {
-    App.nodeSettings.id = node.id;
-    App.nodeSettings.color = App.renderer.nodeColor(node.id);
-    App.nodeSettings.size = App.renderer.nodeSize(node.id);
+    if (typeof(node) != "undefined") {
+        App.nodeSettings.id = node.id;
+        App.nodeSettings.color = App.renderer.nodeColor(node.id);
+        App.nodeSettings.size = App.renderer.nodeSize(node.id);
 
-    var layout = App.renderer.layout();
-    if (layout && layout.pinNode) {
-        App.nodeSettings.isPinned = layout.pinNode(node.id);
+        updateRessourceURL(node.id);
+        updateMetaNode(node);
+        App.nodeSettings.url = Session.get("URLRessource");
+
+        var layout = App.renderer.layout();
+        if (layout && layout.pinNode) {
+            App.nodeSettings.isPinned = layout.pinNode(node.id);
+        }
+        App.gui.update();
     }
-    App.gui.update();
 }
 
 function createNodeSettings(gui, renderer) {
     var nodeSettings = gui.addFolder('Current Node');
     var currentNode = {
         id: '',
+        url: '',
         color: 0,
         size: 0,
         isPinned: false
     };
 
     nodeSettings.add(currentNode,'id');
+    nodeSettings.add(currentNode, 'url');
     nodeSettings.addColor(currentNode, 'color').onChange(setColor);
     nodeSettings.add(currentNode, 'size', 0, 200).onChange(setSize);
     nodeSettings.add(currentNode, 'isPinned').onChange(setPinned);
@@ -104,6 +114,8 @@ Template.visualisation.helpers({
     },
     URLRessource: function() {
         return Session.get('URLRessource');
+    }, vivagraphjs: function() {
+        return Session.get('vivagraphjs');
     }
 });
 
@@ -377,7 +389,7 @@ function onLoad() {
         var freeze = Session.get("freezeNodeSelection");
         if (!freeze) {
             updateMetaNode(node);
-            updateRessourceURL(node);
+            updateRessourceURL(node.id);
         }
     }).mouseLeave(function (node) {
         console.log('Mouse left node: ' + node.id);
@@ -443,7 +455,7 @@ function onLoad() {
             // for now : temporary button to 'release' the selection
             var current  = Session.get("currentNodeSelected");
             updateMetaNode(node);
-            updateRessourceURL(node);
+            updateRessourceURL(node.id);
             uncheckNode(node);
             if (typeof(current) != "undefined" && currentNodeColor != colorSelected)
                 setNodeColor(current, colorNonSelected);
@@ -474,54 +486,54 @@ function onLoad() {
             multiSelectOverlay = null;
         }
     });
-    function updateMetaNode(node) {
-        var metaNode = $('textarea[name=tmpMetaNode]');
+}
+function updateMetaNode(node) {
+    var metaNode = $('textarea[name=tmpMetaNode]');
 
-        var res = "" + node.id +  "\n";
-        metaNode.val(res);
+    var res = "" + node.id +  "\n";
+    metaNode.val(res);
 
-        var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
-        var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
-        var query = "";
+    var sparqlChooser1 = $('input[name=selectSPARQL]')[0].checked;
+    var sparqlChooser2 = $('input[name=selectSPARQL]')[1].checked;
+    var query = "";
 
-        if (!nodeIsIndividual(node.id))
-            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
-                "WHERE {"+
-                '<'+node.id+"> ?predicate ?object"+
-                "}"+
-                "GROUP BY ?predicate";
-        else
-            query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
-                "WHERE {"+
-                "?subject ?predicate ?name."+
-                "FILTER (STR(?name)='"+node.id+"')"+
-                "}"+
-                "GROUP BY ?predicate";
+    if (!nodeIsIndividual(node.id))
+        query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+            "WHERE {"+
+            '<'+node.id+"> ?predicate ?object"+
+            "}"+
+            "GROUP BY ?predicate";
+    else
+        query = "SELECT ?predicate (COUNT(DISTINCT ?object) AS ?nb_object)"+
+            "WHERE {"+
+            "?subject ?predicate ?name."+
+            "FILTER (STR(?name)='"+node.id+"')"+
+            "}"+
+            "GROUP BY ?predicate";
 
-        if (sparqlChooser1)
-            Meteor.call('querySelectMarmotta', query, function(errors, results) {
-                updateMetaRes(results.results.bindings, metaNode);
-            });
-        else if(sparqlChooser2)
-            Meteor.call('querySelectFuseki', query, function(errors, results) {
-                updateMetaRes(results.results.bindings, metaNode);
-            });
-
-        function updateMetaRes(results, metaNode) {
-            var predicates = [];
-            for (var cur in results)
-                if (typeof(results[cur].predicate) != "undefined")
-                    predicates.push(results[cur].predicate.value);
-            Session.set('listPredicates', predicates);
-        }
-    }
-    function updateRessourceURL(node) {
-        Meteor.call('testIfRessourceFromRepo', node.id, function(err, results) {
-            Session.set('URLRessource', results);
+    if (sparqlChooser1)
+        Meteor.call('querySelectMarmotta', query, function(errors, results) {
+            updateMetaRes(results.results.bindings, metaNode);
         });
+    else if(sparqlChooser2)
+        Meteor.call('querySelectFuseki', query, function(errors, results) {
+            updateMetaRes(results.results.bindings, metaNode);
+        });
+
+    function updateMetaRes(results, metaNode) {
+        var predicates = [];
+        for (var cur in results)
+            if (typeof(results[cur].predicate) != "undefined")
+                predicates.push(results[cur].predicate.value);
+        Session.set('listPredicates', predicates);
     }
 }
 
+function updateRessourceURL(node) {
+    Meteor.call('testIfRessourceFromRepo', node, function(err, results) {
+        Session.set('URLRessource', results);
+    });
+}
 function uncheckNode(node) {
     var nodeTo;
     if (typeof(node) != "undefined")

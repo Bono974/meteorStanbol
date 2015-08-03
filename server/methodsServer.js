@@ -905,8 +905,9 @@ Meteor.publish(
         return PredicatesResult.find({});
 });
 Meteor.publish(
-    "resultSPARQLMappings", function() {
-        return MappingsResult.find({});
+    "resultSPARQLMappings", function(cursor) {
+        var cursor = cursor || 0;
+        return MappingsResult.find({}, {limit:20, skip:cursor});
 });
 Meteor.publish(
     "resultSPARQLEntityRight", function(cursor) {
