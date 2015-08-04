@@ -27,28 +27,38 @@ function pixelOnLoad() {
     App.gui = App.settingsView.gui();
     App.nodeSettings = App.addCurrentNodeSettings(App.gui, App.renderer);
 
-    App.renderer.on('nodehover', showNodeDetails);
-    App.renderer.on('nodeclick', showNodeDetails);
+    App.renderer.on('nodehover', showNodeDetailsHover);
+    App.renderer.on('nodeclick', showNodeDetailsClick);
 
     console.log(App.renderer);
 }
 
-function showNodeDetails(node) {
+function showNodeDetailsHover(node) {
     if (typeof(node) != "undefined") {
-        App.nodeSettings.id = node.id;
-        App.nodeSettings.color = App.renderer.nodeColor(node.id);
-        App.nodeSettings.size = App.renderer.nodeSize(node.id);
+        if (!freeze) {
+            updateMetaNode(node);
+            App.nodeSettings.id = node.id;
+            App.nodeSettings.color = App.renderer.nodeColor(node.id);
+            App.nodeSettings.size = App.renderer.nodeSize(node.id);
 
-        updateRessourceURL(node.id);
-        updateMetaNode(node);
-        App.nodeSettings.url = Session.get("URLRessource");
+            var freeze = Session.get("freezeNodeSelection");
+            updateRessourceURL(node.id);
+            App.nodeSettings.url = Session.get("URLRessource");
 
-        var layout = App.renderer.layout();
-        if (layout && layout.pinNode) {
-            App.nodeSettings.isPinned = layout.pinNode(node.id);
+            var layout = App.renderer.layout();
+            if (layout && layout.pinNode) {
+                App.nodeSettings.isPinned = layout.pinNode(node.id);
+            }
+            App.gui.update();
         }
-        App.gui.update();
     }
+}
+function showNodeDetailsClick(node) {
+    Session.set("freezeNodeSelection", !Session.get("freezeNodeSelection"));
+    updateMetaNode(node);
+    updateRessourceURL(node.id);
+
+    showNodeDetailsHover(node);
 }
 
 function createNodeSettings(gui, renderer) {

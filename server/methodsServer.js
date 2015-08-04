@@ -854,9 +854,10 @@ function updateHeaderGResultsDB(datasetSPARQL) {
     }
     for (var cur in results) {
         var tmp = [];
-        for (var cur2 in results[cur]) {
-            tmp.push(results[cur][cur2].value);
-        }
+        //for (var cur2 in results[cur]) {
+            //tmp.push(results[cur][cur2].value);
+        //}
+        tmp.push(results[cur]);
         QueryResult.insert({res: tmp});
     }
 }

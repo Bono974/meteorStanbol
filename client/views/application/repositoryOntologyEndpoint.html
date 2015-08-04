@@ -104,18 +104,9 @@
                               <tbody>
                                     {{#each rowResultQuery}}
                                 <tr>
-                                    <!--
-                                    {{#each res}}
-                                  {{#each headerResultQuery}}
-                                  <td>{{.[header]}}</td>
-                                  {{/each}}
-                                  {{/each}}
-                                        -->
-
-
-                                     {{#each res}}
+                                    {{#each resultMap res}}
                                      <td><a href="./repositoryOnto?currentEntity={{escapeEntity .}}">{{.}}</a></td>
-                                     {{/each}}
+                                    {{/each}}
                                 </tr>
                                     {{/each}}
                               </tbody>

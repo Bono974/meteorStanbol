@@ -3,6 +3,8 @@ var marmottaURL = "http://localhost:8080/marmotta";
 Session.setDefault('cursor', 0);
 Session.setDefault('cursorRight', 0);
 Session.setDefault('cursorLeft', 0);
+Session.setDefault('cursorResultsShow', 0);
+
 Meteor.autorun(function(){
     Meteor.subscribe("resultSPARQLHeaders");
     Meteor.subscribe("resultSPARQL", Session.get('cursor'));
@@ -38,7 +40,7 @@ Template.repositoryOnto.helpers({
         var currentPredicate = Router.current().params.query.currentPredicate;
         Meteor.call("updateCurrentEntityMetadata", currentEntity, function(err, results) {
                 Session.set("currentEntity", currentEntity);
-            });
+        });
         //if (typeof(currentPredicate) != "undefined")
         //    Meteor.call("getEntitiesByPredicate", currentEntity, currentPredicate);
         return currentEntity;
@@ -57,15 +59,25 @@ Template.repositoryOnto.helpers({
     }, "currentEntityMappings": function() {
         var mappings = MappingsResult.find({});
         return mappings;
+    }, "resultMap": function(value) {
+        var headers =  HeaderResult.find({}).fetch();
+        var res = [];
+
+        for(var cur in headers) {
+            var curHeader = headers[cur].header;
+            res.push(value[0][curHeader].value);
+        }
+        return res;
     }
 });
+
 
 Template.EditorPage.helpers({
     "editorOptions": function() {
         return {
             lineNumbers: true,
             mode: "sparql",
-            theme: "monokai"
+            theme: "solarized dark"
         };
     }, "editorCode": function() {
         return "SELECT * WHERE {?s ?p ?o} LIMIT 10";
