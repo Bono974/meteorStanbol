@@ -2,7 +2,9 @@ var colorSelected       = 0xFFA500ff;
 var colorNonSelected    = 0x009ee8;
 QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
-var App = {};
+console.log("TEST APP", App);
+if (typeof(App) == "undefined")
+    var App = {};
 
 Template.visualisation.rendered = function() {
     //onLoad();
@@ -12,25 +14,27 @@ Template.visualisation.rendered = function() {
 };
 
 function pixelOnLoad() {
-    App.graph = ngraphgraph();
-    console.log(App.graph);
+    if (typeof(App.graph) == "undefined") {
+        App.graph = ngraphgraph();
+        console.log(App.graph);
 
-    App.graph.addLink(1,2);
+        App.graph.addLink(1,2);
 
-    var pixelRender = ngraphpixel;
-    App.renderer = pixelRender(App.graph, {
-        container: document.getElementById('graph-container')
-    });
+        var pixelRender = ngraphpixel;
+        App.renderer = pixelRender(App.graph, {
+            container: document.getElementById('graph-container')
+        });
 
-    App.addCurrentNodeSettings = createNodeSettings;
-    App.settingsView = configpixel(App.renderer);
-    App.gui = App.settingsView.gui();
-    App.nodeSettings = App.addCurrentNodeSettings(App.gui, App.renderer);
+        App.addCurrentNodeSettings = createNodeSettings;
+        App.settingsView = configpixel(App.renderer);
+        App.gui = App.settingsView.gui();
+        App.nodeSettings = App.addCurrentNodeSettings(App.gui, App.renderer);
 
-    App.renderer.on('nodehover', showNodeDetailsHover);
-    App.renderer.on('nodeclick', showNodeDetailsClick);
+        App.renderer.on('nodehover', showNodeDetailsHover);
+        App.renderer.on('nodeclick', showNodeDetailsClick);
 
-    console.log(App.renderer);
+        console.log(App.renderer);
+    }
 }
 
 function showNodeDetailsHover(node) {

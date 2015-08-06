@@ -1,12 +1,24 @@
 <template name="repositoryOnto">
 
+<style type='text/css'>
+.tab-pane {
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    border-radius: 0px 0px 5px 5px;
+    padding: 10px;
+}
+.nav-tabs {
+    margin-bottom: 0;
+}
+</style>
+
 <div>
     <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
                 <a class="navbar-brand" href="#">ServOWeb 2</a>
             </div>
-
             <center>
                 <div class="collapse navbar-collapse" id="navbar-main">
                     <ul class="nav navbar-nav">
@@ -46,7 +58,7 @@
                   <div class="panel panel-default">
                       <div class="panel-heading"> Ontologies </div>
                       <div class="panel-body">
-                          <select multiple class="form-control">
+                          <select multiple class="form-control" name="ontologyOverview">
                               {{#each listOntos}}
                               <option value={{.}}> {{.}} </option>
                               {{/each}}
@@ -70,26 +82,16 @@
                                  <!-- TODO : show result "currentEntity predicate ?object" -->
                               </tbody>
                           </table>
-                          <table class="table table-striped table-condensed table-hover table-bordered">
-                              <thead>
-                                  <th>Available mappings</th>
-                              </thead>
-                              <tbody>
-                                 {{#each currentEntityMappings}}
-                                 <tr><a href="./repositoryOnto?currentEntity={{escapeEntity mapping}}">{{mapping}}</a></tr>
-                                 {{/each}}
-                                 <!-- TODO : show result "currentEntity ?alignment mappings" -->
-                              </tbody>
-                          </table>
+                          {{>MappingsAvailable}}
                       </div>
                   </div>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-8">
                   <div class="panel panel-default">
                       <div class="panel-heading"> SPARQL Query </div>
                       <div class="panel-body">
                           {{>EditorPage}}
-                          <center><br/><button type="button" class="btn btn-default" value="runQuery"> Run </button></center>
+                          <center><br/><button type="button" class="btn btn-primary" value="runQuery"> Run </button></center>
                       </div>
                   </div>
                   <div class="panel panel-default">
@@ -124,8 +126,7 @@
       <div role="tabpanel" class="tab-pane" id="EntityViewer">
           <br/>
           <div class="panel panel-default">
-              <div class="panel-heading"> [{{currentEntityLabel}}] : {{currentEntity}}
-              </div>
+              <div class="panel-heading"> [{{currentEntityLabel}}] : {{currentEntity}} </div>
               <div class="panel-body">
                   <table class="table table-striped table-condensed table-hover table-bordered">
                       <thead>
@@ -135,13 +136,16 @@
                       <tbody>
                       {{#each rowResultQueryEntityRight}}
                       <tr>
-                          {{#each res}}
-                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity .}}">{{.}}</a></td>
-                          {{/each}}
+                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity predicate}}">{{predicate}}</a></td>
+                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity object}}">{{object}}</a></td>
                       </tr>
                       {{/each}}
                       </tbody>
                   </table>
+                  <ul class="pager">
+                      <li class="previousResultsRight"><a href="#">&larr; Previous</a></li>
+                      <li class="nextResultsRight"><a href="#">Next &rarr;</a></li>
+                  </ul>
                   <table class="table table-striped table-condensed table-hover table-bordered">
                       <thead>
                           <th>subject</th>
@@ -150,70 +154,76 @@
                       <tbody>
                       {{#each rowResultQueryEntityLeft}}
                       <tr>
-                          {{#each res}}
-                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity .}}">{{.}}</a></td>
-                          {{/each}}
+                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity subject}}">{{subject}}</a></td>
+                          <td><a href="./repositoryOnto?currentEntity={{escapeEntity predicate}}">{{predicate}}</a></td>
                       </tr>
                       {{/each}}
                       </tbody>
                   </table>
+                  <ul class="pager">
+                      <li class="previousResultsLeft"><a href="#">&larr; Previous</a></li>
+                      <li class="nextResultsLeft"><a href="#">Next &rarr;</a></li>
+                  </ul>
+                  {{>MappingsAvailable}}
               </div>
           </div>
       </div>
       <div role="tabpanel" class="tab-pane" id="MappingViewer">MappingViewer Content</div>
       <div role="tabpanel" class="tab-pane" id="AdminViewer">
-    <div class="container">
-        <div class="row main-row">
-            <div class="8u 12u(mobile)">
-                Choisissez une ontologie à afficher <br/><br/>
-
-                <form action="" name="getMetaOntoForm" class="getMetaOntoForm">
-                    <select name='ontology'>
-                        {{#each listOntos}}
-                        <option value={{.}}> {{.}} </option>
-                        {{/each}}
-                    </select>
-                    <button type="submit" name="open" value="open"> Ouvrir et visualiser </button>
-                    <button type="submit" name="delete" value="delete"> Supprimer du dépôt</button>
-                </form>
-            </div>
-            <div class="4u 12u(mobile)">
-                {{> metadata}}
-                <section>
-                    <form action="" name="addOntology" class="addOntology">
-                        Charger une ontologie : <br/><br/>
-
-                        Format :
-                        <select name="format">
-                            <option>text/turtle</option>
-                            <option>application/x-geoatom+xml</option>
-                            <option>text/calendar</option>
-                            <option>application/html</option>
-                            <option>application/rdf+json</option>
-                            <option>application/ld+json</option>
-                            <option>application/xhtml+xml</option>
-                            <option>application/x-turtle</option>
-                            <option>text/n3</option>
-                            <option>application/xml</option>
-                            <option>text/rdf+n3</option>
-                            <option>application/trix</option>
-                            <option>text/vcard</option>
-                            <option>application/x-trig</option>
-                            <option>application/atom+xml</option>
-                            <option>application/rss+xml</option>
-                            <option>text/plain</option>
-                            <option>application/rdf+xml</option>
-                            <option>text/html</option>
-                            <option>application/x-georss+xml</option>
-                        </select><br/>
-                        Context / nom du graphe : <input type="text" name="context">
-                        {{> uploadOntology}}
-                    </form>
-                </section>
-            </div>
-
-        </div>
-    </div>
+          <div class="row">
+              <div class="col-md-4">
+                  <div class="panel panel-default">
+                      <div class="panel-heading"> Repository management </div>
+                      <div class="panel-body">
+                          Choose an ontology <br/>
+                          <form action="" name="getMetaOntoForm" class="getMetaOntoForm">
+                              <select name='ontology'>
+                                  {{#each listOntos}}
+                                  <option value={{.}}> {{.}} </option>
+                                  {{/each}}
+                              </select> <br/> <br/>
+                              <button class="btn btn-default" type="submit" name="open" value="open"> See metadata </button>
+                              <button class="btn btn-danger" type="submit" name="delete" value="delete"> Delete from repository </button>
+                          </form>
+                          {{> metadata}}
+                      </div>
+                  </div>
+              </div>
+              <div class="col-md-6">
+                  <div class="panel panel-default">
+                      <div class="panel-heading"> Load a new ontology </div>
+                      <div class="panel-body">
+                          <form action="" name="addOntology" class="addOntology">
+                              Format :
+                              <select name="format">
+                                  <option>text/turtle</option>
+                                  <option>application/x-geoatom+xml</option>
+                                  <option>text/calendar</option>
+                                  <option>application/html</option>
+                                  <option>application/rdf+json</option>
+                                  <option>application/ld+json</option>
+                                  <option>application/xhtml+xml</option>
+                                  <option>application/x-turtle</option>
+                                  <option>text/n3</option>
+                                  <option>application/xml</option>
+                                  <option>text/rdf+n3</option>
+                                  <option>application/trix</option>
+                                  <option>text/vcard</option>
+                                  <option>application/x-trig</option>
+                                  <option>application/atom+xml</option>
+                                  <option>application/rss+xml</option>
+                                  <option>text/plain</option>
+                                  <option>application/rdf+xml</option>
+                                  <option>text/html</option>
+                                  <option>application/x-georss+xml</option>
+                              </select><br/>
+                              Type a graph name: <input type="text" name="context">
+                              {{> uploadOntology}}
+                          </form>
+                      </div>
+                  </div>
+              </div>
+          </div>
       </div>
   </div>
 </div>
@@ -221,20 +231,40 @@
 </template>
 
 <template name="metadata">
-Métadonnées de l'ontologie : <b> {{ontoSelect}} </b> <br/>
-<section>
+Ontology's metadata : <b> {{ontoSelect}} </b> <br/>
     <ul>
         {{#each METAS}}
         <li> {{.}} </li>
         {{/each}}
     </ul>
-</section>
 </template>
 
 <template name="uploadOntology">
-<!--{{> upload_bootstrap }}-->
-    <input type=file name="ontology"/>
-    <button type="submit" value="addOntology"> Ajouter </button>
+<style type='text/css'>
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top:0;
+    right:0;
+    min-width:100%;
+    min-height:100%;
+    font-size:100px;
+    text-align:right;
+    filter:alpha(opacity=0);
+    opacity:0;
+    outline:none;
+    background:white;
+    cursor:inherit;
+    display:block;
+}
+</style>
+<span class="btn btn-primary btn-file">
+    Browse... <input type=file name="ontology"/>
+</span>
+<button class="btn btn-default" type="submit" value="addOntology"> Add </button>
 </template>
 
 <template name="EditorPage">
@@ -245,4 +275,21 @@ Métadonnées de l'ontologie : <b> {{ontoSelect}} </b> <br/>
 }
 </style>
 {{> CodeMirror id="SPARQLQuery" name="SPARQLQuery" options=editorOptions code=editorCode reactiveVar="queryUserSPARQL"}}
+</template>
+<template name="MappingsAvailable">
+<table class="table table-striped table-condensed table-hover table-bordered">
+    <thead>
+        <th>Available mappings</th>
+    </thead>
+    <tbody>
+    {{#each currentEntityMappings}}
+    <tr><a href="./repositoryOnto?currentEntity={{escapeEntity mappings}}">{{mappings}}</a></tr>
+    {{/each}}
+    </tbody>
+</table>
+<ul class="pager">
+    <li class="previousResultsMappings"><a href="#">&larr; Previous</a></li>
+    <li class="nextResultsMappings"><a href="#">Next &rarr;</a></li>
+</ul>
+
 </template>

@@ -1,15 +1,16 @@
 var marmottaURL = "http://localhost:8080/marmotta";
 
+
 Session.setDefault('cursor', 0);
 Session.setDefault('cursorRight', 0);
 Session.setDefault('cursorLeft', 0);
-Session.setDefault('cursorResultsShow', 0);
+Session.setDefault('cursorMappings', 0);
 
 Meteor.autorun(function(){
     Meteor.subscribe("resultSPARQLHeaders");
     Meteor.subscribe("resultSPARQL", Session.get('cursor'));
     Meteor.subscribe("resultSPARQLPredicates");
-    Meteor.subscribe("resultSPARQLMappings");
+    Meteor.subscribe("resultSPARQLMappings", Session.get('cursorMappings'));
 
     Meteor.subscribe("resultSPARQLEntityRight", Session.get('cursorRight'));
     Meteor.subscribe("resultSPARQLEntityLeft", Session.get('cursorLeft'));
@@ -27,20 +28,22 @@ Template.repositoryOnto.helpers({
         var results = QueryResult.find({});
         return results;
     }, "rowResultQueryEntityRight": function() {
-        var results = QueryResultEntityRight.find({});
-        return results;
+        var right = QueryResultEntityRight.find({});
+        return right;
     }, "rowResultQueryEntityLeft": function() {
-        var results = QueryResultEntityLeft.find({});
-        return results;
+        var left = QueryResultEntityLeft.find({});
+        return left;
     }, "headerResultQuery": function() {
         var headers =  HeaderResult.find({});
         return headers;
     }, "currentEntity": function() {
         var currentEntity = Router.current().params.query.currentEntity;
         var currentPredicate = Router.current().params.query.currentPredicate;
-        Meteor.call("updateCurrentEntityMetadata", currentEntity, function(err, results) {
+        if (Session.get("currentEntity") != currentEntity) {
+            Meteor.call("updateCurrentEntityMetadata", currentEntity, function(err, results) {
                 Session.set("currentEntity", currentEntity);
-        });
+            });
+        }
         //if (typeof(currentPredicate) != "undefined")
         //    Meteor.call("getEntitiesByPredicate", currentEntity, currentPredicate);
         return currentEntity;
@@ -56,9 +59,6 @@ Template.repositoryOnto.helpers({
     }, "currentEntityPredicates": function() {
         var predicates = PredicatesResult.find({});
         return predicates;
-    }, "currentEntityMappings": function() {
-        var mappings = MappingsResult.find({});
-        return mappings;
     }, "resultMap": function(value) {
         var headers =  HeaderResult.find({}).fetch();
         var res = [];
@@ -71,6 +71,25 @@ Template.repositoryOnto.helpers({
     }
 });
 
+Template.MappingsAvailable.helpers({
+    "escapeEntity": function(entity) {
+        return encodeURIComponent(entity);
+    }, "currentEntityMappings": function() {
+        var mappings = MappingsResult.find({});
+        return mappings;
+    }
+});
+
+Template.MappingsAvailable.events({
+    'click .previousResultsMappings': function(event, t) {
+        event.preventDefault();
+        if (Number(Session.get('cursorMappings')) > 19)
+            Session.set('cursorMappings', Number(Session.get('cursorMappings')) - 20);
+    }, 'click .nextResultsMappings': function(event, t) {
+        event.preventDefault();
+        Session.set('cursorMappings', Number(Session.get('cursorMappings')) + 20);
+    }
+});
 
 Template.EditorPage.helpers({
     "editorOptions": function() {
@@ -87,17 +106,19 @@ Template.EditorPage.helpers({
 Template.metadata.helpers({
     "METAS": function() {
         var str = Session.get('META');
+        if (typeof(str) != "undefined") {
 
-        var parsed = JSON.parse(str);
-        var arr = [];
-        for(var x in parsed)
-            arr.push( "--" + x + " : " + parsed[x]);
-        return arr;
+            var parsed = JSON.parse(str);
+            var arr = [];
+            for(var x in parsed)
+                arr.push( "--" + x + " : " + parsed[x]);
+            return arr;
+        }
+        return "";
     }, "ontoSelect": function() {
         return Session.get('ontoSelected');
     }
 });
-
 
 function refreshListOnto() {
     Meteor.call('getListOnto', function(error, results) {
@@ -178,10 +199,41 @@ Template.repositoryOnto.events({
         event.preventDefault();
         if (Number(Session.get('cursor')) > 19)
             Session.set('cursor', Number(Session.get('cursor')) - 20);
-        console.log(Session.get('cursor'));
     }, 'click .nextResults': function(event, t) {
         event.preventDefault();
         Session.set('cursor', Number(Session.get('cursor')) + 20);
-        console.log(Session.get('cursor'));
+    }, 'change select[name=ontologyOverview]': function(event, t) {
+        event.preventDefault();
+        var ont = $('select[name=ontologyOverview]')[0];
+        ont = ont[ont.selectedIndex].value;
+        var query =
+            "SELECT *\n" +
+            "FROM <"+ont+">\n"+
+            "WHERE {\n"+
+            "\t?subject ?predicate ?object\n"+
+            "}\n"+
+            "LIMIT 1000\n";
+        Session.set('queryUserSPARQL', query);
+    }, 'click .previousResultsRight': function(event, t) {
+        event.preventDefault();
+        if (Number(Session.get('cursorRight')) > 19)
+            Session.set('cursorRight', Number(Session.get('cursorRight')) - 20);
+    }, 'click .nextResultsRight': function(event, t) {
+        event.preventDefault();
+        Session.set('cursorRight', Number(Session.get('cursorRight')) + 20);
+    }, 'click .previousResultsLeft': function(event, t) {
+        event.preventDefault();
+        if (Number(Session.get('cursorLeft')) > 19)
+            Session.set('cursorLeft', Number(Session.get('cursorLeft')) - 20);
+    }, 'click .nextResultsLeft': function(event, t) {
+        event.preventDefault();
+        Session.set('cursorLeft', Number(Session.get('cursorLeft')) + 20);
+    }, 'click .previousResultsMappings': function(event, t) {
+        event.preventDefault();
+        if (Number(Session.get('cursorMappings')) > 19)
+            Session.set('cursorMappings', Number(Session.get('cursorMappings')) - 20);
+    }, 'click .nextResultsMappings': function(event, t) {
+        event.preventDefault();
+        Session.set('cursorMappings', Number(Session.get('cursorMappings')) + 20);
     }
 });

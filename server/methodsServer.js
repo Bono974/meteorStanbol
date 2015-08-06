@@ -4,9 +4,7 @@ var fusekiURL = "http://localhost:3030/testHDTFuseki/query";
 var couchDBURL = "http://localhost"; var couchDBPORT = 5984;
 var dbRessource = "ressources";
 
-//var referenceMeteorStanbol = "D:/users/bt1/referenceMeteorStanbol"; //Windows at work
-var referenceMeteorStanbol = "/Users/bruno/referenceMeteorStanbol"; // OSX at home
-
+var referenceMeteorStanbol = settings.referenceMeteorStanbol;
 var db = new(cradle.Connection)(couchDBURL, couchDBPORT).database(dbRessource);
 
 var tempDirectoryToAnnotate = '../../../../../.uploads/toAnnotate/';
@@ -15,9 +13,7 @@ var ressourceStore = new FS.Store.FileSystem("ressources", {
   path: tempDirectoryToAnnotate
 });
 
-//var hdtFilePath = "D:/users/bt1/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //Windows at work
-//var hdtFilePath = "/Users/bruno/referenceMeteorStanbol/marmottaRepository/repo.hdt"; //OSX at home
-var hdtFilePath = "/Users/bruno/export.hdt"; //OSX at home
+var hdtFilePath = settings.hdtFilePath;
 
 
 var graphRDFMapping = "http://alignmentsGraph";
@@ -768,28 +764,44 @@ Meteor.methods({
             "WHERE {"+
                 "?subject ?predicate "+ uriEntity+
             "}";
-        //FIXME FIXME FIXME
-        Meteor.call("querySelectMarmotta", queryPredicates, function(err, results) {
-            if (typeof(results.results) != "undefined") {
-                var predicates = results.results.bindings;
-                Meteor.call("querySelectMarmotta", queryMappings, function(err, results) {
-                    if (typeof(results.results) != "undefined") {
-                        var mappings = results.results.bindings;
-                        Meteor.call("querySelectMarmotta", queryRight, function(err, results) {
-                            if (typeof(results.results) != "undefined") {
-                                var right = results.results.bindings;
-                                Meteor.call("querySelectMarmotta", queryLeft, function(err, results) {
-                                    if (typeof(results.results) != "undefined") {
-                                        var left = results.results.bindings;
-                                        updateCurrentEntity(predicates, mappings, right, left);
-                                    }
-                                });
-                            }// else updateCurrentEntity(predicates, mappings);
-                        });
-                    }
-                });
-            }
-        });
+        var predicates = Async.runSync(
+                function(done) {
+                    Meteor.call("querySelectMarmotta", queryPredicates, function(err, results) {
+                        if (typeof(results.results) != "undefined") {
+                            var predicates = results.results.bindings;
+                            done(null, predicates);
+                        }
+                    });
+                }).result;
+        var mappings = Async.runSync(
+                function(done) {
+                    Meteor.call("querySelectMarmotta", queryMappings, function(err, results) {
+                        if (typeof(results.results) != "undefined") {
+                            var mappings = results.results.bindings;
+                            done(null, mappings);
+                        }
+                    });
+                }).result;
+        var right = Async.runSync(
+                function(done) {
+                    Meteor.call("querySelectMarmotta", queryRight, function(err, results) {
+                        if (typeof(results.results) != "undefined") {
+                            var right = results.results.bindings;
+                            done(null, right);
+                        }
+                    });
+                }).result;
+        var left = Async.runSync(
+                function(done) {
+                    Meteor.call("querySelectMarmotta", queryLeft, function(err, results) {
+                        if (typeof(results.results) != "undefined") {
+                            var left = results.results.bindings;
+                            done(null, left);
+                            updateCurrentEntity(predicates, mappings, right, left);
+                        }
+                    });
+                }).result;
+
     }, getSPARQLResultUser: function(query) {
         this.unblock();
 
@@ -854,16 +866,12 @@ function updateHeaderGResultsDB(datasetSPARQL) {
     }
     for (var cur in results) {
         var tmp = [];
-        //for (var cur2 in results[cur]) {
-            //tmp.push(results[cur][cur2].value);
-        //}
         tmp.push(results[cur]);
         QueryResult.insert({res: tmp});
     }
 }
 
 function updateCurrentEntity(predicates, mappings, right, left) {
-    console.log('POW');
     PredicatesResult.remove({});
     MappingsResult.remove({});
     QueryResultEntityRight.remove({});
@@ -871,27 +879,34 @@ function updateCurrentEntity(predicates, mappings, right, left) {
 
     for (var cur in predicates)
         PredicatesResult.insert({predicate: predicates[cur].predicate.value});
-
     for (var cur in mappings)
-        MappingsResult.insert({mapping: mappings[cur].mapping.value});
+        MappingsResult.insert({mappings: mappings[cur].mapping.value});
 
     var right = right || [];
     var left = left || [];
 
     for (var cur in right) {
-        var tmp = [];
-        tmp.push(right[cur].predicate.value);
-        tmp.push(right[cur].object.value);
-        QueryResultEntityRight.insert({res: tmp});
+        var tmp2 = {
+            predicate: right[cur].predicate.value,
+            object: right[cur].object.value
+        };
+        //tmp.push(tmp2);
+        QueryResultEntityRight.insert(tmp2);
     }
-    for (var cur in left) {
-        var tmp = [];
-        tmp.push(left[cur].subject.value);
-        tmp.push(left[cur].predicate.value);
-        QueryResultEntityLeft.insert({res: tmp});
-    }
-}
 
+    for (var cur in left) {
+        var tmp2 = {
+            subject: left[cur].subject.value,
+            predicate: left[cur].predicate.value
+        };
+        //tmp.push(tmp2);
+        QueryResultEntityLeft.insert(tmp2);
+    }
+    //console.log('right', right);
+    //console.log('left', left);
+    //console.log('mappings', mappings);
+    //console.log('predicates', predicates);
+}
 
 Meteor.publish(
     "resultSPARQL", function(cursor) {
