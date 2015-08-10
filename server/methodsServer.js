@@ -818,8 +818,11 @@ Meteor.methods({
         return result.result;
     }, getEntityLabel: function(entity) {
         this.unblock();
+        //TODO : if entity is from a SKOS voc, then use skos:prefLabel / skos:altLabel
 
         var query = "SELECT ?label WHERE {<"+ entity +"> rdfs:label ?label}";
+        //var query = "SELECT ?label WHERE {<"+ entity +"> skos:prefLabel ?label}";
+        //var query = "SELECT ?label WHERE {<"+ entity +"> skos:altLabel ?label}";
 
         var result = Async.runSync(
                 function(done) {
