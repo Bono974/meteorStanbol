@@ -377,7 +377,7 @@ Meteor.methods({
                 var lock = Async.runSync(
                         function(done) {
                             client.query(triplesToAdd[iterations_min]).execute(function (error, results) {
-                                done(null, "end :"+iteration_min);
+                                done(null, "end :"+iterations_min);
                             });
                         });
                 iterations_min++;
@@ -553,18 +553,21 @@ Meteor.methods({
         //console.log(filePath);
         fs.writeFile(filePath, new Buffer(fileData));
     }, getRessource: function(filename) {
-        var res; // FIXME init with MEteor npm package async
-        db.get(filename, function (err, doc) {
-            if (typeof doc != "undefined") {
-                bool = true;
-                res = { // FIXME Get author with view
-                    id : doc._id,
-                    rev : doc._rev,
-                    doc : doc
-                };
-            }
-        });
-        return res;
+        var res = Async.runSync(
+                function(done) {
+                    db.get(filename, function (err, doc) {
+                        if (typeof doc != "undefined") {
+                            bool = true;
+                            res = { // FIXME Get author with view
+                                id : doc._id,
+                                rev : doc._rev,
+                                doc : doc
+                            };
+                            done(null, res);
+                        }
+                    });
+                });
+        return res.result;
     }, checkRessource: function(filename) {
         var res; //FIXME init
         var bool = false;
@@ -573,8 +576,8 @@ Meteor.methods({
                 bool = true;
                 res = { // FIXME Get author with view
                     checked: true,
-                    id : doc._id,
-                    rev : doc._rev
+            id : doc._id,
+            rev : doc._rev
                 };
             }
         });

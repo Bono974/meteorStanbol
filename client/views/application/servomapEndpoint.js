@@ -14,10 +14,11 @@ Meteor.call('getListOnto', function(error, results) {
 });
 
 function align(ont1, ont2, binary){ //TODO : binary OSGi : TODO
+    Session.set("mapDone", "In progress...");
     Meteor.call('align2ontos', ont1, ont2, binary,
             function(error, results) {
                 console.log(results.content);
-                return results.content;
+                Session.set("mapDone", "Done.");
             });
 }
 
@@ -28,12 +29,11 @@ function updateResultAvailable() {
     ont2 = ont2[ont2.selectedIndex].value;
 
     Meteor.call("getAlignmentsO1O2", ont1, ont2, function(err, results) {
-        $('textarea[name=mappingResults]').val(results);
-
         // TODO : Show alignments into a visualisation template via vivagraphjs or other.
         //And then let user edit via UI, then add them all into Marmotta/Triplestore
         var fileArray = results.split('\n');
         Session.set('mappings', fileArray);
+        Session.set('mappingsTxt', results);
         //console.log(fileArray);
     });
 }
@@ -117,7 +117,9 @@ Template.servomap.events({
         loadNewGraph(Session.get('mappings'));
     }, "click button[value=putMappings]":function(event, t) {
         event.preventDefault();
-        confirmMappings();
+        // TODO : Get modifications from Session.get("mappings")
+        if (confirm("Do you want to add these mappings into the triplestore ?"))
+            confirmMappings();
     }, "click button[id=toggleRender]":function() {
         if ($('#toggleRender')[0].value == "pause") {
             $('#toggleRender')[0].value = 'resume';
@@ -132,6 +134,17 @@ Template.servomap.events({
     }
 });
 
+Template.mappingResults.helpers({
+    "editorOptions": function() {
+        return {
+            lineNumbers: true,
+            mode: "C",
+            theme: "solarized dark",
+            scrollbarStyle: "simple"
+        };
+    }
+});
+
 Template.servomap.helpers({
     "ontoSelectedDUM": function(){
         return Session.get('ontoSelected');
@@ -139,8 +152,10 @@ Template.servomap.helpers({
         var str = Session.get('listOnto');
         console.log(str);
         return str;
-    }, "MAPPING": function() {
-        return Session.get("mappingsO1O2");
+    }, "tool": function() {
+        return "ServOMap";
+    }, "DONE" : function() {
+        return Session.get("mapDone");
     }
 });
 

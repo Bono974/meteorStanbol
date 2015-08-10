@@ -1,86 +1,94 @@
 <template name="repositoryRessource">
-    <nav class="navbar navbar-default">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <a class="navbar-brand" href="#">ServOWeb 2</a>
-            </div>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">ServOWeb 2</a>
+        </div>
 
-            <center>
-                <div class="collapse navbar-collapse" id="navbar-main">
-                    <ul class="nav navbar-nav">
-                        <li><a href="./repositoryOnto"> Ontology repository</a></li>
-                        <li class="active"><a href="#">Ressource enhancement <span class="sr-only">(current)</span></a></li>
-                        <li><a href="./servomap">Alignment process</a></li>
-                        <li><a href="./visualisation">Visualization</a></li>
-                    </ul>
-                    <form class="navbar-form navbar-right" role="search">
-                        <div class="form-group">
-                            <input type="text" class="form-control" name="username" placeholder="Username">
-                        </div>
-                        <div class="form-group">
-                            <input type="password" class="form-control" name="password" placeholder="Password">
-                        </div>
-                        <button type="submit" class="btn btn-default">Sign in</button>
-                    </form>
-                </div><!-- /.navbar-collapse -->
-            </center>
-        </div><!-- /.container-fluid -->
-    </nav>
-
-<div id=main>
-    <div class="container">
-        <div class="row main-row">
-            <div class="8u 12u(mobile)">
-                Choisissez une ressource à afficher<br/> <br/>
-
-                <form action="" class="getMetaRessource">
-                    <select name="ressource">
-                        {{#each listRessources}}
-                        <option value={{.}}> {{.}} </option>
-                        {{/each}}
-                    </select>
-                    <button type="submit" value="open"> Ouvrir et visualiser </button>
-                    <button type="submit" value="delete"> Supprimer du dépôt </button>
-                    <button type="submit" value="addToMarmotta"> Ajouter dans Marmotta </button>
+        <center>
+            <div class="collapse navbar-collapse" id="navbar-main">
+                <ul class="nav navbar-nav">
+                    <li><a href="./repositoryOnto"> Ontology repository</a></li>
+                    <li class="active"><a href="#">Ressource enhancement <span class="sr-only">(current)</span></a></li>
+                    <li><a href="./servomap">Alignment process</a></li>
+                    <li><a href="./visualisation">Visualization</a></li>
+                </ul>
+                <form class="navbar-form navbar-right" role="search">
+                    <div class="form-group">
+                        <input type="text" class="form-control" name="username" placeholder="Username">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" class="form-control" name="password" placeholder="Password">
+                    </div>
+                    <button type="submit" class="btn btn-default">Sign in</button>
                 </form>
-                <br/>
-                <div>
-                    <textarea rows="80" cols="100"> {{doc}} </textarea>
+            </div><!-- /.navbar-collapse -->
+        </center>
+    </div><!-- /.container-fluid -->
+</nav>
+
+<div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading"> Select a ressource : </div>
+                <div class="panel-body">
+                    <form action="" class="getMetaRessource">
+                        <select class="form-control" name="ressource">
+                            {{#each listRessources}}
+                            <option value={{.}}> {{.}} </option>
+                            {{/each}}
+                        </select>
+                        <br/>
+                        <button type="submit" class="btn btn-warning" value="open"> See all annotations (really slow) </button>
+                        <button type="submit" class="btn btn-danger" value="delete"> Delete from depot </button>
+                        <button type="submit" class="btn btn-default" value="addToMarmotta"> Add enhancements into triplestore </button>
+                    </form>
+                    <br/>
+
+                {{>ressourcePage}}
                 </div>
             </div>
-            <div class="4u 12u(mobile)">
-                <section>
-                    {{>metaRessource}}
-                </section>
-                <section>
-                    Charger une ressource à annoter (PDF, .txt, .xls, ..):
+        </div>
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading"> Load a new ressource to annotate (.doc, .txt, .html, .pdf ...) : </div>
+                <div class="panel-body">
+                    <!--<textarea rows="80" cols="100"> {{doc}} </textarea>-->
                     {{> uploadRessource}}
-                </section>
+                </div>
             </div>
         </div>
     </div>
-
 </div>
 </template>
 
+<template name="uploadRessource">
+<form method="POST" class="addRessource">
+    Chain : <select class="form-control" name="chain">
+        {{#each listChains}}
+        <option value={{.}}> {{.}} </option>
+        {{/each}}
+    </select>
+    <br/>
 
-<template name="metaRessource">
-Métadonnées de la ressource selectionnée : {{ressourceSelect}} <br/> <br/>
-{{METAressources}}
+    <input type="text" class="form-control" name="filename" placeholder="Ressource's name"><br/>
+    <input type="text" class="form-control" name="author" placeholder="Author"><br/>
+
+    <span class="btn btn-primary btn-file">
+        Browse ... <input type="file">
+    </span>
+    <button class="btn btn-default" type="submit" value="addRessource"> Add </button>
+    <br/> {{progressFile}}
+</form>
 </template>
 
-<template name="uploadRessource">
-    <form method="POST" class="addRessource">
-        <br/>
-        Chain : <select name="chain">
-            {{#each listChains}}
-            <option value={{.}}> {{.}} </option>
-            {{/each}}
-        </select>
-        <br/>
-
-        <input type="text" name="filename" value="Nom du document"><br/>
-        <input type="text" name="author" value="Auteur"><br/>
-        <input type="file"> <button type="submit" value="addRessource"> Ajouter</button>
-    </form>
+<template name="ressourcePage">
+<style>
+.CodeMirror {
+    border: 1px solid #eee;
+    height:auto;
+}
+</style>
+{{> CodeMirror id="SPARQLQuery" name="SPARQLQuery" options=editorOptions code=editorCode reactiveVar="docSelected"}}
 </template>

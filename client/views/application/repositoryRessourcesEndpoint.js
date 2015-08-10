@@ -55,6 +55,16 @@ function refreshListRessources(results) {
     return res;
 }
 
+Template.ressourcePage.helpers({
+    "editorOptions": function() {
+        return {
+            lineNumbers: true,
+            mode: "javascript",
+            theme: "solarized dark"
+        };
+    }
+});
+
 Template.repositoryRessource.helpers({
     "enhancerRES": function() {
         return Session.get('enhancedContent');
@@ -65,19 +75,13 @@ Template.repositoryRessource.helpers({
     }
 });
 
-Template.metaRessource.helpers({
-    "METAressources": function() {
-        return Session.get('ressourceMETA');
-    }, "ressourceSelected": function() {
-        return Session.get('ressourceSelected');
-    }
-});
-
 Template.uploadRessource.helpers({
     "enhancedContent": function() {
         return Session.get('enhancedContent');
     }, "listChains": function() {
         return Session.get('chains');
+    }, "progressFile": function() {
+        return Session.get("fileUpload");
     }
 });
 
@@ -89,13 +93,13 @@ Template.repositoryRessource.events({
 
         Meteor.call('getRessource', ressource, function(errors, results) {
             console.log(results);
-            Session.set('docSelected', results.doc);
+            Session.set('docSelected', JSON.stringify(results.doc, null, 2));
         });
-
     }, "click button[value=delete]": function(event, t){
         event.preventDefault();
         var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
-        if (confirm("Êtes vous sûr de vouloir supprimer le fichier " + ressource + " du dépôt ?")) {
+        if (confirm("Are you sure to delete " + ressource + " from doc_repository AND from his annotations stored stored into the triple store ?")) {
+            //TODO : Delete his annotations stored into Marmotta as well !
             Meteor.call('deleteRessource', ressource);
             Meteor.call('getListRessources', function(error, results) {
                 return refreshListRessources(results);
@@ -103,14 +107,16 @@ Template.repositoryRessource.events({
         }
     } , "click button[value=addToMarmotta]": function(event, t) {
         event.preventDefault();
-        var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
-        Session.set('ressourceSelected', ressource);
-        Meteor.call('addEnhancementsToRepo', ressource, function(errors, results){
-            if (errors)
-            console.log(errors);
-            else
-            console.log(results);
-        });
+        if (confirm("Do you really want to add these annotations into the triplestore ?")) {
+            var ressource = t.$("form.getMetaRessource select[name=ressource]").val();
+            Session.set('ressourceSelected', ressource);
+            Meteor.call('addEnhancementsToRepo', ressource, function(errors, results){
+                if (errors)
+                console.log(errors);
+                else
+                console.log(results);
+            });
+        }
     }
 });
 
@@ -121,14 +127,17 @@ Template.uploadRessource.events({
         var author = t.$("form.addRessource input[name=author]").val();
         var ressource = t.$("form.addRessource input[type=file]")[0].files[0];
 
-        if (typeof ressource === "undefined") {
-            alert("Il n'y a aucun fichier selectionné !");
+        if (filename === "" || author === "") {
+            alert("Pleaser enter a name for the ressource, and who you are !");
+            return;
+        } else if (typeof ressource === "undefined") {
+            alert("No file was selected !");
             return;
         } else {
             // TODO : couchdb view ?
             // check if ressource already been uploaded with another or same chain
             processFileToCouchDB(filename, author, ressource);
-            uploadFile(ressource);
+            Session.set("fileUpload", filename);
         }
     }
 });
@@ -174,6 +183,7 @@ function processFileToCouchDB(filename, author, ressourceToAnnotate){
             };
             enhanceRessource(ressourceToAnnotate, settings);
         }
+        Session.set("fileUpload", Session.get("fileUpload") + " uploaded !");
     });
 }
 
