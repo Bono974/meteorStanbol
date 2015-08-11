@@ -72,6 +72,8 @@ Template.repositoryRessource.helpers({
         return Session.get('ressources');
     }, "doc": function() {
         return JSON.stringify(Session.get('docSelected'), null, 2);
+    }, "progressADD": function() {
+        return Session.get('ressourceSelected');
     }
 });
 
@@ -112,9 +114,10 @@ Template.repositoryRessource.events({
             Session.set('ressourceSelected', ressource);
             Meteor.call('addEnhancementsToRepo', ressource, function(errors, results){
                 if (errors)
-                console.log(errors);
+                    console.log(errors);
                 else
-                console.log(results);
+                    console.log(results);
+                Session.set('ressourceSelected', Session.get('ressourceSelected')+"'s annotations added.");
             });
         }
     }

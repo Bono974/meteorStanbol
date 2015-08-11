@@ -111,8 +111,22 @@
     top: 10%;
     z-index: 99999;
 }
+/*
+#TOTO {
+    margin: 50px;
+    position: fixed;
+    left: 0 ;
+    top: 10%;
+    z-index: 99999;
+    }
+ */
 </style>
 {{/if}}
+<!--
+<div id="TOTO" class="row">
+<div class="span4 collapse-group">
+    <p class="collapse">
+-->
 <div id=selectSPARQL>
     Visualisation <br/>
     <input id="selectSPARQLM" type="radio" name="selectSPARQL" value="marmotta" checked="checked"> Marmotta
@@ -130,15 +144,21 @@
 </div>
 
 {{#if vivagraphjs}}
-    <button id="loadRandomGraph">Load random graph</button>
-    <button id="toggleRender" value="pause">Pause render</button>
-    <button id="toggleFreeze" value="unfreezed"> No node selected </button>
-    <button id="cutSelection"> Cut selection ? </button>
-    <button id="keepSelection"> Keep selection ? </button>
+<button id="loadRandomGraph">Load random graph</button>
+<button id="toggleRender" value="pause">Pause render</button>
+<button id="toggleFreeze" value="unfreezed"> No node selected </button>
+<button id="cutSelection"> Cut selection ? </button>
+<button id="keepSelection"> Keep selection ? </button>
 
-    <textarea id="tmpMetaMode" name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea>
-    <input type="text" id="URLRessource" name="URLRessource" value={{URLRessource}} size="72">
+<textarea id="tmpMetaMode" name="tmpMetaNode" placeholder="Metadonnés hover node" rows="10" cols="70"></textarea>
+<input type="text" id="URLRessource" name="URLRessource" value={{URLRessource}} size="72">
 {{/if}}
+<!--
+    </p>
+    <p><a class="btn" href="#"> Expand..</a></p>
+</div>
+</div>
+-->
 
 {{>visuVivaGraphGlobal}}
 </template>

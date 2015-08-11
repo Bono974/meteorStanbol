@@ -242,6 +242,10 @@ Meteor.methods({
         // TODO : test if alignments are already in repository (versionning ?)
         this.unblock();
 
+        var endpoint = marmottaURL+'/sparql/update';
+        var sparql = Meteor.npmRequire('sparql-client');
+        var client = new sparql(endpoint);
+
         var res = Async.runSync(
                 function(done) {
                     Meteor.call('getAlignmentsO1O2', ont1, ont2, true, function(err, results) {
@@ -295,6 +299,9 @@ Meteor.methods({
                                         var fileArray = data.split('\n');
                                         for (var cur in fileArray) {
                                             var currentMapping = fileArray[cur].split(';');
+                                            //console.log('notice me -- ', currentMapping);
+                                            if (currentMapping === '')
+                                                break;
 
                                             var e1 = currentMapping[0];
                                             var e2 = currentMapping[1];
@@ -356,6 +363,9 @@ Meteor.methods({
                                                 "   }" +
                                                 "}");
                                         }
+                                        //console.log(queryTriples);
+
+                                        //precompute(queryTriples, 0, queryTriples.length);
                                         done(null, queryTriples);
                                     });
                                 });
@@ -364,27 +374,32 @@ Meteor.methods({
                 });
 
         var triplesToAdd = res.result;
+        //console.log(triplesToAdd);
 
-        var endpoint = marmottaURL+'/sparql/update';
-        var sparql = Meteor.npmRequire('sparql-client');
-        var client = new sparql(endpoint);
+        precompute(triplesToAdd, 0, triplesToAdd.length);
 
-        precompute(0, triplesToAdd.length);
-
-        function precompute(iterations_min, iterations_max) {
+        function precompute(triplesToAdd, iterations_min, iterations_max) {
             var i = 0;
-            while((iterations_max-iterations_min) != 0 && i < 10) {
+            while((iterations_max-iterations_min) >= 0 && i < 10) {
                 var lock = Async.runSync(
                         function(done) {
-                            client.query(triplesToAdd[iterations_min]).execute(function (error, results) {
-                                done(null, "end :"+iterations_min);
-                            });
+                            console.log(triplesToAdd[iterations_min]);
+                            //Meteor.call('queryUpdateMarmotta', triplesToAdd[iterations_min], function(err, results) {
+                            //    console.log("end:"+iterations_min);
+                            //    done(null, "end: "+iterations_min);
+                            //});
+                            if (typeof(triplesToAdd[iterations_min]) != "undefined") {
+                                client.query(triplesToAdd[iterations_min]).execute(function (error, results) {
+                                    console.log("end:"+iterations_min);
+                                    done(null, "end :"+iterations_min);
+                                });
+                            }
                         });
                 iterations_min++;
                 i++;
             }
             if (iterations_min == iterations_max) {
-                //console.log("DONE");
+                console.log("DONE");
                 return;
             }
             if (iterations_min < iterations_max ) { // FIXME
@@ -416,12 +431,15 @@ Meteor.methods({
         return res.result;
     }, query: function(endpoint, query) {
         //var query = "SELECT * FROM <http://human.owl> WHERE {?s rdfs:subClassOf ?o} LIMIT 10";
+        if (typeof(query) === "undefined") return;
         var result = Async.runSync(
                 function(done) {
+                    //console.log("QUERY !!!", query);
                     var urlQuery = endpoint + "?query=" + escape(query) + "&output=json";
                     //var urlQuery = endpoint + "?query=" + encodeURIComponent(query) + "&output=json";
                     HTTP.call("GET", urlQuery, function(err, results) {
-                        //console.log(err);
+                        //console.log(query);
+                        console.log(err);
                         if (results == null) {
                             //console.log(err);
                             done(null, 'end');
@@ -437,6 +455,7 @@ Meteor.methods({
                             return;
                         }
                         //console.log(res === '');
+                        //console.log(query);
                         res = JSON.parse(res);
                         done(null, res);
                     });

@@ -6,7 +6,7 @@ MappingsResult = new Mongo.Collection("mappingsResult");
 QueryResultEntityRight = new Mongo.Collection("queryResultEntityRight");
 QueryResultEntityLeft = new Mongo.Collection("queryResultEntityLeft");
 
-
+/*
 var wrappedFind = Meteor.Collection.prototype.find;
 
 Meteor.Collection.prototype.find = function() {
@@ -29,3 +29,4 @@ Meteor.Collection.prototype.find = function() {
     });
     return cursor;
 };
+*/

@@ -2,9 +2,13 @@ var colorSelected       = 0xFFA500ff;
 var colorNonSelected    = 0x009ee8;
 QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
 
-console.log("TEST APP", App);
-if (typeof(App) == "undefined")
-    var App = {};
+/*$('.row .btn').on('click', function(e) {
+    e.preventDefault();
+    var $this = $(this);
+    var $collapse = $this.closest('.collapse-group').find('collapse');
+    $collapse.collapse('toggle');
+    console.log("TOTO");
+});*/
 
 Template.visualisation.rendered = function() {
     //onLoad();
