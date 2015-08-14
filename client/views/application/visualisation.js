@@ -10,7 +10,7 @@ QueryResult = new Mongo.Collection("resultHDT"); //FIXME : tabular
     console.log("TOTO");
 });*/
 
-Template.visualisation.rendered = function() {
+Template.visuVivaGraphGlobal.rendered = function() {
     //onLoad();
     //Session.set("vivagraphjs", true);
     pixelOnLoad();
@@ -150,13 +150,12 @@ Template.visualisation.events({
             Meteor.call('querySelectMarmotta', query, function(errors, results) {
                 var settings = {
                     dataset: results.results.bindings,
-                    extend: false
+                    graph: App.graph,
+                    extend: true
                 }
-                loadNewGraph(settings);
+                //loadNewGraph(settings);
+                extendGraph(settings);
                 console.log(settings);
-
-
-
             });
         } else if(sparqlChooser2) {
             Meteor.call('querySelectFuseki', query, function(errors, results) {
@@ -261,6 +260,7 @@ function filterResultByURI(subject, object) { //don't care about order
 }
 
 function newGraphFromDataset(settings){
+    var COLOR = Math.random() * 0xFFFFFF | 0;
     var i = 0;
     var dataset = settings.dataset;
     var root = settings.root;
@@ -282,6 +282,8 @@ function newGraphFromDataset(settings){
                     if (filterResultByURI(object)) {
                         resG.addNode(object);
                         resG.addLink(root, object);
+
+                        App.renderer.nodeColor(object, COLOR);
                         i++;
                     }
                 }
@@ -309,8 +311,10 @@ function newGraphFromDataset(settings){
                         resG.addNode(object);
                         resG.addNode(subject);
                         resG.addLink(subject, object);
-                        i++;
-                        i++;
+
+                        App.renderer.nodeColor(subject, COLOR);
+                        App.renderer.nodeColor(object, COLOR);
+                        i += 2;
                     }
                 }
             else {
@@ -322,6 +326,8 @@ function newGraphFromDataset(settings){
                     if (filterResultByURI(subject, object)) {
                         resG.addNode(object);
                         resG.addLink(tmpSubject, object);
+
+                        App.renderer.nodeColor(object, COLOR);
                         i++;
                     }
                 }
@@ -336,6 +342,8 @@ function newGraphFromDataset(settings){
                     if (filterResultByURI(subject)) {
                         resG.addNode(subject);
                         resG.addLink(tmpObject, subject);
+
+                        App.renderer.nodeColor(subject, COLOR);
                         i++;
                     }
                 }
@@ -353,6 +361,13 @@ function newGraphFromDataset(settings){
         //resG.addLink(root, 'ROOT');
     }
     console.log(i);
+    var COLOR_A = Math.random() * 0xFFFFFF | 0;
+    resG.forEachNode(function(node){
+        var tmp = node.id;
+        if (typeof(tmp) == "number") return;
+        if (tmp.search("http://alignmentsGraph") != -1)
+            App.renderer.nodeColor(node.id, COLOR_A);
+    });
     return resG;
 }
 
@@ -641,7 +656,27 @@ function loadNewGraph(settings) {
     }
 }
 function extendGraph(settings) {
+    //settings.extend=true;
     newGraphFromDataset(settings);
+
+    precompute(5000);
+    App.renderer.focus();
+    //App.renderer.autofit();
+
+    function precompute(iterations) {
+        var i = 0;
+        while(iterations > 0 && i <40) {
+            App.renderer.layout().step();
+            iterations--;
+            i++;
+        }
+        if (iterations > 0) {
+            if (!App.renderer.stable())
+                setTimeout(function(){
+                    precompute(iterations);
+                }, 0);
+        }
+    }
 }
 function copyGraph(from, to) {
     to.beginUpdate();

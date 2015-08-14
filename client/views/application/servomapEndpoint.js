@@ -45,7 +45,8 @@ function confirmMappings() {
 
     var settings = {
         author:"Bruno",
-        tool:"ServOMap"
+        tool:"ServOMap",
+        mappings:Session.get('mappingsTxt')
     };
 
     Meteor.call("putAlignmentsO1O2", ont1, ont2, settings, function(err, results) {

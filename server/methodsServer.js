@@ -296,12 +296,19 @@ Meteor.methods({
                                         var triplesArray = [""];
                                         var i = 0;
 
-                                        var fileArray = data.split('\n');
+                                        var fileArray;
+                                        if (typeof(settings.mappings) != "undefined")
+                                            fileArray = settings.mappings.split('\n');
+                                        else
+                                            fileArray = data.split('\n');
+
                                         for (var cur in fileArray) {
                                             var currentMapping = fileArray[cur].split(';');
                                             //console.log('notice me -- ', currentMapping);
-                                            if (currentMapping === '')
+                                            if (currentMapping === '' || currentMapping.length != 3) {
+                                                console.log("ERROR, ignore", currentMapping);
                                                 break;
+                                            }
 
                                             var e1 = currentMapping[0];
                                             var e2 = currentMapping[1];
